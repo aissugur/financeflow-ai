@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+backend/.env
+backend/data/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+
+# Editor / tooling
+.DS_Store
+.vscode/
+.idea/
+.claude/
+*.log
+
+# Scratch / debug files (never commit these)
+backend/_debug.py
+backend/_check.py
+_scratch*
+
+# Unrelated files that happen to live in this folder (HFSimulator project).
+# These are NOT part of FinanceFlow AI — see the note in the review.
+ориг.prj
+ориг.sav
+ориг.xml
+*.sav
+*.prj

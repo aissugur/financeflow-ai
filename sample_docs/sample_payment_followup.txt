@@ -1,0 +1,33 @@
+PAYMENT FOLLOW-UP NOTE
+
+Date: April 17, 2025
+From: Accounts Receivable, Nimbus Cloud Solutions Inc.
+To: Accounts Payable, Brightside Retail Group
+Subject: Overdue Invoice INV-2025-0473
+
+Hello,
+
+This is a friendly reminder that invoice INV-2025-0473 for $2,413.98 was due on
+April 2, 2025 and is now 15 days overdue.
+
+Summary:
+- Invoice Number: INV-2025-0473
+- Original Due Date: April 2, 2025
+- Amount Outstanding: $2,413.98
+- Days Overdue: 15
+- Applicable Late Fee (1.5% monthly): $36.21
+
+Please arrange payment of the outstanding balance at your earliest convenience.
+If payment has already been sent, kindly disregard this note and share the
+remittance details so we can reconcile our records.
+
+You can pay via ACH bank transfer or credit card using the original invoice
+reference INV-2025-0473.
+
+If you would like to set up a short payment plan, reply to this note and our
+billing team will follow up within two business days.
+
+Thank you,
+Accounts Receivable Team
+Nimbus Cloud Solutions Inc.
+billing@nimbuscloud.example

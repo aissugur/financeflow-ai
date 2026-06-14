@@ -1,0 +1,38 @@
+INVOICE
+
+Nimbus Cloud Solutions Inc.
+1420 Market Street, Suite 300
+Austin, TX 78701
+billing@nimbuscloud.example
+
+Bill To:
+Brightside Retail Group
+88 Commerce Avenue
+Denver, CO 80202
+accounts@brightsideretail.example
+
+Invoice Number: INV-2025-0473
+Invoice Date: March 3, 2025
+Due Date: April 2, 2025
+Payment Terms: Net 30
+
+------------------------------------------------------------
+Description                         Qty     Unit Price   Amount
+------------------------------------------------------------
+Cloud Hosting - Business Tier        1       $1,200.00   $1,200.00
+Managed Database Add-on              2         $250.00     $500.00
+Priority Support (monthly)           1         $350.00     $350.00
+Data Transfer Overage (TB)           4          $45.00     $180.00
+------------------------------------------------------------
+                                   Subtotal               $2,230.00
+                                   Tax (8.25%)              $183.98
+                                   Total Amount Due       $2,413.98
+------------------------------------------------------------
+
+Accepted Payment Methods: Bank transfer (ACH), credit card, or check.
+Make checks payable to Nimbus Cloud Solutions Inc.
+
+Remittance Reference: INV-2025-0473
+Late payments are subject to a 1.5% monthly finance charge.
+
+Thank you for your business.

@@ -1,0 +1,27 @@
+# Run the whole app (backend + frontend) with one command:
+#   docker compose up --build
+# Then open http://localhost:5173
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - ANSWER_MODE=extractive
+      - LOG_LEVEL=INFO
+    # Optional: persist the SQLite DB across restarts.
+    volumes:
+      - backend_data:/app/data
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  backend_data:

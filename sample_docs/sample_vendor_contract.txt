@@ -1,0 +1,46 @@
+VENDOR SERVICES AGREEMENT
+
+This Vendor Services Agreement ("Agreement") is entered into as of
+January 15, 2025 ("Effective Date") by and between:
+
+Provider: Nimbus Cloud Solutions Inc. ("Provider")
+Client:   Brightside Retail Group ("Client")
+
+1. SERVICES
+Provider shall supply cloud hosting, managed database services, and priority
+technical support as described in the applicable order forms.
+
+2. TERM
+The initial term of this Agreement is twelve (12) months from the Effective
+Date and renews automatically for successive twelve (12) month periods unless
+either party gives written notice of non-renewal at least thirty (30) days
+before the end of the then-current term.
+
+3. FEES AND PAYMENT
+Client shall pay all undisputed invoices within thirty (30) days of the invoice
+date (Net 30). Late amounts accrue a finance charge of 1.5% per month. All fees
+are quoted in U.S. dollars and are exclusive of applicable taxes.
+
+4. SERVICE LEVEL
+Provider commits to a monthly uptime of 99.9%. If uptime falls below this
+threshold, Client is entitled to a service credit equal to 5% of the monthly
+fee for the affected service.
+
+5. CONFIDENTIALITY
+Each party shall protect the other party's confidential information and use it
+solely to perform this Agreement.
+
+6. TERMINATION
+Either party may terminate this Agreement for material breach if the breach is
+not cured within fifteen (15) days of written notice.
+
+7. LIMITATION OF LIABILITY
+Each party's total liability under this Agreement shall not exceed the total
+fees paid by Client in the twelve (12) months preceding the claim.
+
+8. GOVERNING LAW
+This Agreement is governed by the laws of the State of Texas.
+
+Signed:
+Nimbus Cloud Solutions Inc. — Dana Reyes, VP Operations
+Brightside Retail Group — Marcus Hale, Director of Procurement

@@ -1,0 +1,7 @@
+# Normalize line endings to LF in the repo for all text files.
+* text=auto eol=lf
+
+# Binary / generated assets should not be diffed.
+*.png binary
+*.jpg binary
+*.pdf binary

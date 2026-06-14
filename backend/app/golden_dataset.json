@@ -1,0 +1,44 @@
+[
+  {
+    "document": "sample_invoice.txt",
+    "question": "What is the total amount due?",
+    "expectation": "answerable",
+    "expected_evidence": "$2,413.98"
+  },
+  {
+    "document": "sample_invoice.txt",
+    "question": "What is the invoice due date?",
+    "expectation": "answerable",
+    "expected_evidence": "April 2, 2025"
+  },
+  {
+    "document": "sample_vendor_contract.txt",
+    "question": "What is the payment term in days?",
+    "expectation": "answerable",
+    "expected_evidence": "30"
+  },
+  {
+    "document": "sample_vendor_contract.txt",
+    "question": "What is the monthly uptime commitment?",
+    "expectation": "answerable",
+    "expected_evidence": "99.9%"
+  },
+  {
+    "document": "sample_payment_followup.txt",
+    "question": "How many days overdue is the payment in the follow-up note?",
+    "expectation": "answerable",
+    "expected_evidence": "15"
+  },
+  {
+    "document": "sample_invoice.txt",
+    "question": "What is the customer's social security number?",
+    "expectation": "should_abstain",
+    "expected_evidence": null
+  },
+  {
+    "document": "sample_vendor_contract.txt",
+    "question": "What is the CEO's personal home address?",
+    "expectation": "should_abstain",
+    "expected_evidence": null
+  }
+]

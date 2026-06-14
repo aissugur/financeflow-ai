@@ -246,7 +246,8 @@ npm run dev
 ```
 Frontend runs at **http://localhost:5173** and proxies `/api` to the backend.
 
-Then: **Dashboard → Load sample documents → Ask → click a sample question.**
+Then open the app and click **Try Demo** on the Overview screen — it loads the
+sample documents and answers a question with citations.
 
 ### Make shortcuts
 ```bash
@@ -261,6 +262,56 @@ make docker-up    # build + run everything in Docker
 
 > No `make`? Run the underlying command directly, e.g. reset the DB with
 > `cd backend && python -m app.reset_db`.
+
+---
+
+## How to run locally (quick reference)
+
+| What | Command | URL |
+| ---- | ------- | --- |
+| Backend | `cd backend && uvicorn app.main:app --reload --port 8000` | http://127.0.0.1:8000 · docs at `/docs` |
+| Frontend | `cd frontend && npm run dev` | http://localhost:5173 |
+| Tests | `cd backend && pytest` | — |
+| Evaluation (CLI) | `cd backend && python -m app.eval_cli` | — |
+
+The app you open is **http://localhost:5173**. The backend must be running for it
+to work.
+
+---
+
+## How to upload to GitHub
+
+First time (the repo is already initialized with commits):
+
+```bash
+# 1. Create an EMPTY repo on github.com (no README/license) named e.g. financeflow-ai
+# 2. From the project root, point your local repo at it and push:
+git remote add origin https://github.com/<your-username>/financeflow-ai.git
+git branch -M main
+git push -u origin main
+```
+
+After that, day-to-day:
+```bash
+git add -A
+git commit -m "Describe what changed"
+git push
+```
+
+> If `git remote add origin` says it already exists, update it instead:
+> `git remote set-url origin https://github.com/<your-username>/financeflow-ai.git`
+
+**Files that must NOT be pushed** (already handled by `.gitignore` — never force-add them):
+
+- `backend/.env` — your real API keys
+- `backend/data/` and any `*.db` / `*.sqlite` — the local database
+- `backend/.venv/`, `venv/` — Python virtual environments
+- `frontend/node_modules/`, `frontend/dist/` — installed deps & build output
+- `__pycache__/`, `.pytest_cache/`, `*.log` — caches and logs
+- `.claude/` — local tooling settings
+- `ориг.prj` / `ориг.sav` / `ориг.xml` — unrelated files that happen to be in this folder
+
+Only `.env.example` (with empty key fields) is committed — never the real `.env`.
 
 ---
 

@@ -1,32 +1,53 @@
-# Python
+# ---- Python ----
 __pycache__/
-*.pyc
+*.py[cod]
+*.egg-info/
 .venv/
 venv/
-backend/.env
-backend/data/
-.pytest_cache/
-.coverage
-htmlcov/
+env/
 
-# Node / frontend
+# ---- Node / frontend ----
 node_modules/
 frontend/dist/
 
-# Editor / tooling
+# ---- Env files (never commit real secrets; .env.example IS committed) ----
+.env
+**/.env
+.env.local
+*.env.local
+
+# ---- Database files ----
+backend/data/
+*.db
+*.sqlite
+*.sqlite3
+
+# ---- Caches ----
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.cache/
+
+# ---- Build output ----
+dist/
+build/
+
+# ---- Editor / tooling ----
 .DS_Store
 .vscode/
 .idea/
 .claude/
 *.log
 
-# Scratch / debug files (never commit these)
+# ---- Scratch / debug files (never commit) ----
 backend/_debug.py
 backend/_check.py
 _scratch*
 
-# Unrelated files that happen to live in this folder (HFSimulator project).
-# These are NOT part of FinanceFlow AI — see the note in the review.
+# ---- Unrelated files that happen to live in this folder (HFSimulator project) ----
+# These are NOT part of FinanceFlow AI.
 ориг.prj
 ориг.sav
 ориг.xml

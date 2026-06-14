@@ -1,10 +1,31 @@
 """End-to-end API tests using FastAPI's TestClient against an isolated DB."""
+from tests.conftest import make_pdf_bytes
 
 
 def test_health(client):
     res = client.get("/health")
     assert res.status_code == 200
     assert res.json()["status"] == "ok"
+
+
+def test_upload_valid_pdf_is_processed(client):
+    pdf = make_pdf_bytes("Invoice Total Due 500 dollars")
+    res = client.post(
+        "/documents/upload",
+        files={"file": ("invoice.pdf", pdf, "application/pdf")},
+    )
+    assert res.status_code == 200
+    doc = res.json()
+    assert doc["status"] == "processed"
+    assert doc["file_type"] == "pdf"
+    assert doc["num_chunks"] >= 1
+
+    ask = client.post(
+        "/ask", json={"document_id": doc["id"], "question": "What is the total due?"}
+    ).json()
+    assert ask["abstained"] is False
+    assert len(ask["citations"]) >= 1
+    assert ask["citations"][0]["page"] == 1  # PDF page number is preserved
 
 
 def test_upload_validation_rejects_bad_extension(client):

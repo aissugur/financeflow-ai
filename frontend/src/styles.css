@@ -169,6 +169,28 @@ button.link.danger {
 .chip:hover {
   background: #dbeafe;
 }
+.chip:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Two-line demo chips: question + behaviour hint. */
+.chip.demo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  border-radius: 10px;
+  padding: 8px 12px;
+  text-align: left;
+}
+.chip.demo small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
 
 label {
   display: block;

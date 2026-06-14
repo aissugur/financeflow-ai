@@ -240,8 +240,12 @@ make backend      # run the API
 make frontend     # run the UI
 make test         # run the backend tests
 make eval         # run the anti-hallucination evaluation (CLI)
+make reset-db     # drop + recreate the local database (clean slate)
 make docker-up    # build + run everything in Docker
 ```
+
+> No `make`? Run the underlying command directly, e.g. reset the DB with
+> `cd backend && python -m app.reset_db`.
 
 ---
 

@@ -1,7 +1,7 @@
 # Convenience shortcuts. On Windows, run the underlying commands directly if you
 # don't have `make` (see README "Local setup").
 
-.PHONY: install backend frontend test eval docker-up docker-down
+.PHONY: install backend frontend test eval reset-db docker-up docker-down
 
 install:        ## Install backend (dev) + frontend dependencies
 	cd backend && pip install -r requirements-dev.txt
@@ -18,6 +18,9 @@ test:           ## Run the backend test suite
 
 eval:           ## Run the anti-hallucination evaluation from the CLI
 	cd backend && python -m app.eval_cli
+
+reset-db:       ## Drop and recreate the local database (clean slate)
+	cd backend && python -m app.reset_db
 
 docker-up:      ## Build and run backend + frontend with Docker Compose
 	docker compose up --build

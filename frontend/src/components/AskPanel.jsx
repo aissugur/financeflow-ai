@@ -2,13 +2,25 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import Citations from "./Citations";
 
-// One-click examples that work against the bundled sample documents — makes the
-// demo flow obvious and avoids fumbling for a question on camera.
-const SAMPLE_QUESTIONS = [
-  "What is the total amount due?",
-  "What is the invoice due date?",
-  "What is the payment term in days?",
-  "How many days overdue is the payment?",
+// Curated demo questions that each showcase a distinct behaviour against the
+// bundled sample invoice. Clicking one selects the right document and asks it,
+// so a reviewer can see the product working in a couple of clicks.
+const DEMO_QUESTIONS = [
+  {
+    q: "What is the total amount due?",
+    doc: "sample_invoice.txt",
+    hint: "Strong cited answer",
+  },
+  {
+    q: "What are the payment terms and late fees?",
+    doc: "sample_invoice.txt",
+    hint: "Multiple evidence chunks",
+  },
+  {
+    q: "What is the customer's social security number?",
+    doc: "sample_invoice.txt",
+    hint: "Correctly abstains",
+  },
 ];
 
 export default function AskPanel({ documents }) {
@@ -20,9 +32,12 @@ export default function AskPanel({ documents }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Default to the first processed document.
+  // Default to the sample invoice when present (deterministic demo), else the
+  // first processed document.
   useEffect(() => {
-    if (!docId && processed.length > 0) setDocId(String(processed[0].id));
+    if (docId || processed.length === 0) return;
+    const invoice = processed.find((d) => d.filename === "sample_invoice.txt");
+    setDocId(String((invoice || processed[0]).id));
   }, [processed, docId]);
 
   async function loadHistory(id) {
@@ -38,16 +53,15 @@ export default function AskPanel({ documents }) {
     loadHistory(docId);
   }, [docId]);
 
-  async function onAsk(e) {
-    e.preventDefault();
-    if (!docId || !question.trim()) return;
+  async function submit(id, q) {
+    if (!id || !q.trim()) return;
     setError("");
     setLoading(true);
     setResult(null);
     try {
-      const res = await api.ask(Number(docId), question.trim());
+      const res = await api.ask(Number(id), q.trim());
       setResult(res);
-      await loadHistory(docId);
+      await loadHistory(id);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -55,12 +69,28 @@ export default function AskPanel({ documents }) {
     }
   }
 
+  function onAsk(e) {
+    e.preventDefault();
+    submit(docId, question);
+  }
+
+  async function runDemo(item) {
+    const doc =
+      processed.find((d) => d.filename === item.doc) || processed[0];
+    if (!doc) return;
+    setDocId(String(doc.id));
+    setQuestion(item.q);
+    await submit(doc.id, item.q);
+  }
+
   if (processed.length === 0) {
     return (
       <section className="card">
         <h2>Ask a question</h2>
         <p className="muted">
-          Upload and process a document first, then come back to ask questions.
+          No documents yet. Go to the <strong>Dashboard</strong> and click{" "}
+          <strong>Load sample documents</strong> (or upload your own), then come
+          back to ask questions.
         </p>
       </section>
     );
@@ -70,6 +100,24 @@ export default function AskPanel({ documents }) {
     <section>
       <div className="card">
         <h2>Ask a question</h2>
+
+        <p className="muted">Try a demo question:</p>
+        <div className="suggestions">
+          {DEMO_QUESTIONS.map((item) => (
+            <button
+              type="button"
+              key={item.q}
+              className="chip demo"
+              onClick={() => runDemo(item)}
+              disabled={loading}
+              title={item.doc}
+            >
+              <span>{item.q}</span>
+              <small>{item.hint}</small>
+            </button>
+          ))}
+        </div>
+
         <form onSubmit={onAsk}>
           <label>Document</label>
           <select value={docId} onChange={(e) => setDocId(e.target.value)}>
@@ -87,20 +135,6 @@ export default function AskPanel({ documents }) {
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
           />
-
-          <div className="suggestions">
-            {SAMPLE_QUESTIONS.map((q) => (
-              <button
-                type="button"
-                key={q}
-                className="chip"
-                onClick={() => setQuestion(q)}
-              >
-                {q}
-              </button>
-            ))}
-          </div>
-
           <button type="submit" disabled={loading || !question.trim()}>
             {loading ? "Thinking…" : "Ask"}
           </button>

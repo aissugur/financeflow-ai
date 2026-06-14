@@ -54,10 +54,11 @@ app = FastAPI(
     openapi_tags=TAGS_METADATA,
 )
 
-# Allow the Vite dev server to call the API during local development.
+# Allow any local-dev origin (any port on localhost / 127.0.0.1) so the app
+# works whether the frontend runs on 5173, a different Vite port, or in Docker.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
     allow_methods=["*"],
     allow_headers=["*"],
 )

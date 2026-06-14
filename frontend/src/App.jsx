@@ -1,24 +1,34 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "./api";
-import AskPanel from "./components/AskPanel";
-import Dashboard from "./components/Dashboard";
-import Evaluation from "./components/Evaluation";
+import Sidebar from "./components/Sidebar";
+import { ErrorState } from "./components/ui/States";
+import Overview from "./components/views/Overview";
+import Ask from "./components/views/Ask";
+import Evaluation from "./components/views/Evaluation";
 
-const TABS = ["Dashboard", "Ask", "Evaluation"];
+const HEADINGS = {
+  overview: { title: "Overview", sub: "Upload documents, then ask grounded questions." },
+  ask: { title: "Ask", sub: "Questions are answered only from retrieved evidence." },
+  evaluation: { title: "Evaluation", sub: "How well the assistant stays grounded." },
+};
 
 export default function App() {
-  const [tab, setTab] = useState("Dashboard");
+  const [view, setView] = useState("overview");
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [health, setHealth] = useState(null);
   const [online, setOnline] = useState(true);
+  const [seeding, setSeeding] = useState(false);
+  const [demoSignal, setDemoSignal] = useState(0);
 
   const reload = useCallback(async () => {
     setLoading(true);
     try {
       setDocuments(await api.listDocuments());
+      setOnline(true);
     } catch (_) {
       setDocuments([]);
+      setOnline(false);
     } finally {
       setLoading(false);
     }
@@ -32,60 +42,63 @@ export default function App() {
         setHealth(h);
         setOnline(true);
       })
-      .catch(() => {
-        setHealth(null);
-        setOnline(false);
-      });
+      .catch(() => setOnline(false));
   }, [reload]);
 
+  // "Try Demo": seed the sample documents, jump to Ask, auto-run a showcase Q.
+  async function onTryDemo() {
+    setSeeding(true);
+    try {
+      await api.seedDemo();
+      await reload();
+      setView("ask");
+      setDemoSignal((n) => n + 1);
+    } catch (_) {
+      setOnline(false);
+    } finally {
+      setSeeding(false);
+    }
+  }
+
+  const head = HEADINGS[view];
+
   return (
-    <div className="app">
-      <header className="topbar">
-        <div className="brand">
-          <span className="logo">◆</span> FinanceFlow <span className="ai">AI</span>
+    <div className="app-shell">
+      <Sidebar view={view} setView={setView} online={online} mode={health?.answer_mode} />
+
+      <main className="main">
+        <div className="view-head">
+          <h1>{head.title}</h1>
+          <p>{head.sub}</p>
         </div>
-        <div className="tagline">
-          Ask your finance documents. Get source-backed answers.
-        </div>
-        {health && (
-          <div className="health">
-            mode: <strong>{health.answer_mode}</strong>
+
+        {!online && (
+          <div style={{ marginBottom: 20 }}>
+            <ErrorState>
+              Can’t reach the API. Start the backend with{" "}
+              <code>uvicorn app.main:app --port 8000</code> and refresh.
+            </ErrorState>
           </div>
         )}
-      </header>
 
-      {!online && (
-        <div className="banner-offline">
-          ⚠️ Can't reach the backend API. Start it with{" "}
-          <code>uvicorn app.main:app --port 8000</code> in the <code>backend</code>{" "}
-          folder, then refresh.
-        </div>
-      )}
-
-      <nav className="tabs">
-        {TABS.map((t) => (
-          <button
-            key={t}
-            className={tab === t ? "tab active" : "tab"}
-            onClick={() => setTab(t)}
-          >
-            {t}
-          </button>
-        ))}
-      </nav>
-
-      <main className="content">
-        {tab === "Dashboard" && (
-          <Dashboard documents={documents} reload={reload} loading={loading} />
+        {view === "overview" && (
+          <Overview
+            documents={documents}
+            loading={loading}
+            reload={reload}
+            onTryDemo={onTryDemo}
+            seeding={seeding}
+          />
         )}
-        {tab === "Ask" && <AskPanel documents={documents} />}
-        {tab === "Evaluation" && <Evaluation />}
+        {view === "ask" && (
+          <Ask
+            documents={documents}
+            demoSignal={demoSignal}
+            onDemoConsumed={() => {}}
+          />
+        )}
+        {view === "evaluation" && <Evaluation />}
       </main>
-
-      <footer className="footer">
-        FinanceFlow AI — MVP demo. Answers are grounded in your uploaded
-        documents only.
-      </footer>
     </div>
   );
 }

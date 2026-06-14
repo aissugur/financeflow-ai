@@ -316,12 +316,12 @@ Current result: **7/7 passed, citation_coverage 1.0, evidence_match_rate 1.0,
 
 ## Screenshots
 
-> Create a `docs/` folder and drop in real screenshots before sharing, then the
-> links below will render.
+> Premium dark-first UI. Create a `docs/` folder and drop in real screenshots
+> before sharing, then the links below will render.
 
-- `docs/screenshot-dashboard.png` — document dashboard
-- `docs/screenshot-ask.png` — answer with citations
-- `docs/screenshot-evaluation.png` — evaluation metrics
+- `docs/screenshot-overview.png` — landing/overview: hero pitch, trust badges, documents
+- `docs/screenshot-ask.png` — Ask workspace: answer card + right-hand evidence panel
+- `docs/screenshot-evaluation.png` — evaluation metric cards + pass/fail table
 
 ---
 

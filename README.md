@@ -286,7 +286,7 @@ First time (the repo is already initialized with commits):
 ```bash
 # 1. Create an EMPTY repo on github.com (no README/license) named e.g. financeflow-ai
 # 2. From the project root, point your local repo at it and push:
-git remote add origin https://github.com/<aissugur>/financeflow-ai.git
+git remote add origin https://github.com/aissugur/financeflow-ai.git
 git branch -M main
 git push -u origin main
 ```
@@ -299,7 +299,7 @@ git push
 ```
 
 > If `git remote add origin` says it already exists, update it instead:
-> `git remote set-url origin https://github.com/<aissugur>/financeflow-ai.git`
+> `git remote set-url origin https://github.com/aissugur/financeflow-ai.git`
 
 **Files that must NOT be pushed** (already handled by `.gitignore` — never force-add them):
 

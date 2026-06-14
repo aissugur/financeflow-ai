@@ -27,6 +27,14 @@ When is it overdue? What's the contract's payment term?") means hunting through
 PDFs by hand. Generic chatbots *hallucinate* numbers and dates — unacceptable in
 finance, where a wrong figure has real consequences.
 
+## Target users
+
+- **Finance / AP / AR analysts** who answer recurring questions from invoices,
+  contracts, and dunning notes.
+- **Operations & RevOps teams** triaging vendor terms, due dates, and late fees.
+- **Product / AI teams** that need a grounded, auditable Q&A pattern they can
+  trust in front of customers.
+
 ## Why this project matters
 
 - **Document automation** is one of the highest-value, most concrete uses of AI
@@ -35,6 +43,13 @@ finance, where a wrong figure has real consequences.
   evidence, and the system **abstains** instead of guessing.
 - It mirrors real **AI product-operations** concerns: retrieval quality,
   citations, evaluation metrics, and graceful degradation without a paid model.
+
+## Documentation
+
+- [CASE_STUDY.md](CASE_STUDY.md) — product case study (problem → results)
+- [ARCHITECTURE.md](ARCHITECTURE.md) — system design + diagrams
+- [INTERVIEW_NOTES.md](INTERVIEW_NOTES.md) — direct answers to common questions
+- [DEMO_SCRIPT.md](DEMO_SCRIPT.md) — 60-second demo walkthrough
 
 ---
 
@@ -55,7 +70,7 @@ finance, where a wrong figure has real consequences.
   reporting citation coverage, correct abstentions, and evidence-match rate.
 - 🪵 **Logging** across ingestion, retrieval, ask, abstention, and evaluation,
   plus a global exception handler so a bad request never crashes the server.
-- 🧪 **Tested**: 19 backend tests (pytest + FastAPI TestClient) and **CI** via
+- 🧪 **Tested**: 20 backend tests (pytest + FastAPI TestClient) and **CI** via
   GitHub Actions.
 - 🐳 **Dockerized**: `docker compose up --build` runs backend + frontend.
 - 🤖 **Optional LLM mode** (OpenAI/Anthropic) behind env vars, with automatic
@@ -178,7 +193,7 @@ financeflow-ai/
 │  │  ├─ eval_cli.py        # `python -m app.eval_cli`
 │  │  ├─ golden_dataset.json# questions + expected evidence/abstentions
 │  │  └─ logging_config.py  # one-line logging setup
-│  ├─ tests/                # pytest unit + API tests (19 cases)
+│  ├─ tests/                # pytest unit + API tests (20 cases)
 │  ├─ Dockerfile
 │  ├─ requirements.txt / requirements-dev.txt
 │  └─ .env.example
@@ -281,7 +296,7 @@ curl -X POST http://127.0.0.1:8000/ask \
 ```bash
 cd backend
 pip install -r requirements-dev.txt
-pytest                      # 19 tests: chunking, retrieval, abstention, API, eval
+pytest                      # 20 tests: chunking, retrieval, abstention, API, eval
 ```
 Coverage includes bad file types, empty files, missing documents, weak context,
 unsupported questions, the full upload→ask→delete flow, and the evaluation suite.
@@ -348,7 +363,7 @@ Current result: **7/7 passed, citation_coverage 1.0, evidence_match_rate 1.0,
 | **Backend / API design** | FastAPI with validation, tagged Swagger docs, typed Pydantic I/O, SQLAlchemy models, a global exception handler — `backend/app/main.py` |
 | **AI / RAG engineering** | Chunking, TF-IDF retrieval, focused extractive answers, optional LLM layer — `retrieval.py`, `answering.py` |
 | **Trustworthy AI / AI product ops** | Two abstention gates, citation-backed answers, and a **golden-dataset evaluation** with coverage/abstention/evidence metrics — `answering.py`, `evaluation.py` |
-| **Testing & CI** | 19 pytest cases (unit + API) + GitHub Actions — `backend/tests/`, `.github/workflows/ci.yml` |
+| **Testing & CI** | 20 pytest cases (unit + API) + GitHub Actions — `backend/tests/`, `.github/workflows/ci.yml` |
 | **DevOps / DX** | Dockerfiles, `docker-compose.yml`, `Makefile`, `.env.example`, logging |
 | **Product / UX** | Clean B2B dashboard, demo mode, sample-question chips, empty/loading/error/success states — `frontend/src/` |
 

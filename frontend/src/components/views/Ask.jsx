@@ -21,6 +21,7 @@ export default function Ask({ documents, demoSignal, onDemoConsumed }) {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [mode, setMode] = useState("fast"); // "fast" (extractive) | "thinking" (LLM)
   const lastDemo = useRef(0);
 
   // Default to the sample invoice for a deterministic demo, else the first doc.
@@ -49,7 +50,7 @@ export default function Ask({ documents, demoSignal, onDemoConsumed }) {
     setLoading(true);
     setResult(null);
     try {
-      const res = await api.ask(Number(id), q.trim());
+      const res = await api.ask(Number(id), q.trim(), mode);
       setResult(res);
       await loadHistory(id);
     } catch (err) {
@@ -118,6 +119,28 @@ export default function Ask({ documents, demoSignal, onDemoConsumed }) {
             ))}
           </div>
 
+          <span className="field-label">Answer mode</span>
+          <div className="segmented" role="tablist" aria-label="Answer mode">
+            <button
+              type="button"
+              className={mode === "fast" ? "seg active" : "seg"}
+              aria-pressed={mode === "fast"}
+              onClick={() => setMode("fast")}
+            >
+              ⚡ Fast
+              <small>Instant · grounded snippet</small>
+            </button>
+            <button
+              type="button"
+              className={mode === "thinking" ? "seg active" : "seg"}
+              aria-pressed={mode === "thinking"}
+              onClick={() => setMode("thinking")}
+            >
+              🧠 Thinking
+              <small>LLM reasons · needs API key</small>
+            </button>
+          </div>
+
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -134,7 +157,7 @@ export default function Ask({ documents, demoSignal, onDemoConsumed }) {
               error={error || undefined}
             />
             <Button variant="primary" type="submit" loading={loading} disabled={!question.trim()}>
-              {loading ? "Retrieving…" : "Ask"}
+              {loading ? (mode === "thinking" ? "Thinking…" : "Retrieving…") : "Ask"}
             </Button>
           </form>
 

@@ -32,11 +32,11 @@ export const api = {
   deleteDocument: (id) =>
     fetch(`${BASE}/documents/${id}`, { method: "DELETE" }).then(handle),
 
-  ask: (document_id, question) =>
+  ask: (document_id, question, mode = "fast") =>
     fetch(`${BASE}/ask`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ document_id, question }),
+      body: JSON.stringify({ document_id, question, mode }),
     }).then(handle),
 
   history: (document_id) => {

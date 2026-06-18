@@ -1,19 +1,29 @@
-"""Optional LLM synthesis layer.
+"""Optional LLM synthesis layer for "thinking" mode.
 
-The app NEVER requires this. If ANSWER_MODE=llm and a provider key is present,
-we ask the model to answer strictly from the supplied context and to reply with
-the abstain message when the context is insufficient. Any failure (missing
-package, bad key, network error) falls back to extractive mode upstream.
+The app NEVER requires this. When the user picks Thinking mode AND a provider key
+is configured, we ask the model to reason and answer strictly from the supplied
+context, replying with the abstain message when the context is insufficient.
+Any failure (missing package, bad key, network error) returns None so the caller
+falls back to the extractive Fast engine.
+
+Anthropic path uses adaptive thinking (`thinking={"type": "adaptive"}`) — the
+correct extended-thinking shape for current Claude models — so it genuinely
+"thinks on the fly". Note: temperature must NOT be sent alongside adaptive
+thinking on current models.
 """
+import logging
 from typing import List, Optional
 
 from . import config
 
+logger = logging.getLogger(__name__)
+
 SYSTEM_PROMPT = (
     "You are a careful financial-document assistant. Answer ONLY using the "
-    "provided context excerpts. Do not invent numbers, dates, names, or facts. "
-    "If the answer is not clearly supported by the context, reply with exactly: "
-    f'"{config.ABSTAIN_MESSAGE}". Keep answers short and factual.'
+    "provided context excerpts. Reason step by step, then give a short, factual "
+    "answer. Never invent numbers, dates, names, or company names. If the answer "
+    "is not clearly supported by the context, reply with exactly: "
+    f'"{config.ABSTAIN_MESSAGE}".'
 )
 
 
@@ -23,18 +33,34 @@ def _build_user_prompt(question: str, contexts: List[str]) -> str:
 
 
 def synthesize(question: str, contexts: List[str]) -> Optional[str]:
-    """Return an LLM answer string, or None to signal 'fall back to extractive'."""
-    if config.ANSWER_MODE != "llm":
-        return None
+    """Return an LLM answer string, or None to signal 'fall back to Fast'."""
     try:
         if config.LLM_PROVIDER == "openai":
             return _openai(question, contexts)
         if config.LLM_PROVIDER == "anthropic":
             return _anthropic(question, contexts)
     except Exception as exc:  # pragma: no cover - defensive
-        print(f"[llm] synthesis failed, falling back to extractive: {exc}")
+        logger.warning("LLM synthesis failed, falling back to Fast: %s", exc)
         return None
     return None
+
+
+def _anthropic(question: str, contexts: List[str]) -> Optional[str]:
+    if not config.ANTHROPIC_API_KEY:
+        return None
+    import anthropic  # lazy import
+
+    client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
+    resp = client.messages.create(
+        model=config.ANTHROPIC_MODEL,
+        max_tokens=2048,  # generous: must cover adaptive thinking + the answer
+        thinking={"type": "adaptive"},  # reason on the fly (no temperature with this)
+        system=SYSTEM_PROMPT,
+        messages=[{"role": "user", "content": _build_user_prompt(question, contexts)}],
+    )
+    # Take only the visible text blocks; thinking blocks are skipped.
+    parts = [b.text for b in resp.content if getattr(b, "type", "") == "text"]
+    return "".join(parts).strip() or None
 
 
 def _openai(question: str, contexts: List[str]) -> Optional[str]:
@@ -51,23 +77,4 @@ def _openai(question: str, contexts: List[str]) -> Optional[str]:
             {"role": "user", "content": _build_user_prompt(question, contexts)},
         ],
     )
-    return (resp.choices[0].message.content or "").strip()
-
-
-def _anthropic(question: str, contexts: List[str]) -> Optional[str]:
-    if not config.ANTHROPIC_API_KEY:
-        return None
-    import anthropic  # lazy import
-
-    client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
-    resp = client.messages.create(
-        model=config.ANTHROPIC_MODEL,
-        max_tokens=400,
-        temperature=0,
-        system=SYSTEM_PROMPT,
-        messages=[
-            {"role": "user", "content": _build_user_prompt(question, contexts)},
-        ],
-    )
-    parts = [block.text for block in resp.content if getattr(block, "type", "") == "text"]
-    return "".join(parts).strip()
+    return (resp.choices[0].message.content or "").strip() or None

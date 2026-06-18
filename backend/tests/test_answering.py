@@ -16,7 +16,7 @@ def test_answerable_question_returns_grounded_answer_with_citation():
         "What is the total amount due?", chunks
     )
     assert abstained is False
-    assert mode == "extractive"
+    assert mode == "fast"
     assert "$2,413.98" in answer  # verbatim value from the source
     assert len(citations) >= 1
     assert citations[0].document_name == "doc.txt"
@@ -48,3 +48,16 @@ def test_abstains_on_empty_document():
     answer, abstained, _mode, citations = answer_question("anything?", [])
     assert abstained is True
     assert citations == []
+
+
+def test_thinking_mode_falls_back_to_fast_without_api_key():
+    # With no API key configured, Thinking mode must transparently fall back to
+    # the Fast (extractive) engine — still grounded, still cited, never broken.
+    chunks = [make_chunk(INVOICE)]
+    answer, abstained, mode, citations = answer_question(
+        "What is the total amount due?", chunks, mode="thinking"
+    )
+    assert abstained is False
+    assert mode == "fast"  # fell back because no key
+    assert "$2,413.98" in answer
+    assert len(citations) >= 1

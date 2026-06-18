@@ -24,12 +24,24 @@ DATABASE_URL = f"sqlite:///{DB_PATH}"
 SAMPLE_DOCS_DIR = BACKEND_DIR.parent / "sample_docs"
 
 # Answer behaviour.
-ANSWER_MODE = os.getenv("ANSWER_MODE", "extractive").strip().lower()
+# Two request-time answer modes:
+#   "fast"     -> extractive engine: instant, offline, free (no API key needed).
+#   "thinking" -> LLM reasons on the fly with adaptive thinking (needs an API
+#                 key); automatically falls back to "fast" if no key is set.
+ANSWER_MODE = os.getenv("ANSWER_MODE", "extractive").strip().lower()  # legacy/health only
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "anthropic").strip().lower()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "").strip()
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini").strip()
-ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001").strip()
+
+# Model used by "thinking" mode (reasons with adaptive thinking on Anthropic).
+ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6").strip()
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o").strip()
+
+# True if any provider key is configured (so "thinking" mode is actually usable).
+LLM_AVAILABLE = bool(
+    (LLM_PROVIDER == "anthropic" and ANTHROPIC_API_KEY)
+    or (LLM_PROVIDER == "openai" and OPENAI_API_KEY)
+)
 
 # Retrieval tuning.
 TOP_K = int(os.getenv("TOP_K", "4"))

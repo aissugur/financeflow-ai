@@ -588,6 +588,38 @@ code {
   align-items: start;
 }
 
+/* Fast / Thinking segmented control */
+.segmented {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.seg {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface-1);
+  color: var(--text-dim);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.18s var(--ease), background 0.18s var(--ease), color 0.18s var(--ease);
+}
+.seg:hover { background: var(--surface-2); color: var(--text); }
+.seg small { font-size: 11px; font-weight: 500; color: var(--text-faint); text-transform: none; letter-spacing: 0; }
+.seg.active {
+  color: var(--text);
+  border-color: rgba(124, 139, 255, 0.55);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 1px rgba(124, 139, 255, 0.35) inset;
+}
+
 .chips { display: flex; flex-wrap: wrap; gap: 10px; }
 .chip {
   display: flex;

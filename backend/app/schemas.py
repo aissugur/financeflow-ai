@@ -1,6 +1,6 @@
 """Pydantic request/response models for the API."""
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -29,12 +29,13 @@ class DocumentOut(BaseModel):
 class AskRequest(BaseModel):
     document_id: int
     question: str = Field(min_length=1, max_length=2000)
+    mode: Literal["fast", "thinking"] = "fast"
 
 
 class AskResponse(BaseModel):
     answer: str
     abstained: bool
-    mode: str  # "extractive" or "llm"
+    mode: str  # what actually answered: "fast" or "thinking"
     citations: List[Citation]
 
 

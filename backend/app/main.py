@@ -208,7 +208,7 @@ def ask(req: AskRequest, db: Session = Depends(get_db)):
         )
 
     chunks = db.query(Chunk).filter(Chunk.document_id == document.id).all()
-    answer, abstained, mode, citations = answer_question(question, chunks)
+    answer, abstained, mode, citations = answer_question(question, chunks, req.mode)
     logger.info(
         "Ask doc=%d abstained=%s citations=%d q=%r",
         document.id,

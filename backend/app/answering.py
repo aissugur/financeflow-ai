@@ -99,15 +99,21 @@ def build_citations(scored: List[ScoredChunk], question: str) -> List[Citation]:
     return citations
 
 
-def answer_question(question: str, chunks: List[Chunk]):
-    """Return (answer, abstained, mode, citations)."""
+def answer_question(question: str, chunks: List[Chunk], mode: str = "fast"):
+    """Return (answer, abstained, mode, citations).
+
+    mode="fast"     -> extractive engine (instant, offline, free).
+    mode="thinking" -> LLM reasons on the fly; falls back to fast if no API key
+                       or the call fails. The returned mode reflects what actually
+                       produced the answer ("fast" | "thinking").
+    """
     scored = rank_chunks(question, chunks, top_k=config.TOP_K)
     top_score = scored[0].score if scored else 0.0
 
     # Anti-hallucination guard #1: the best evidence must clear a score floor.
     if not scored or top_score < config.SCORE_THRESHOLD:
         logger.info("Abstain (low score %.3f) for question: %s", top_score, question)
-        return config.ABSTAIN_MESSAGE, True, "extractive", []
+        return config.ABSTAIN_MESSAGE, True, mode, []
 
     # Anti-hallucination guard #2: term coverage. A genuine answer normally
     # shares at least two distinct content words with the source. This stops a
@@ -126,18 +132,21 @@ def answer_question(question: str, chunks: List[Chunk]):
             len(q_terms),
             question,
         )
-        return config.ABSTAIN_MESSAGE, True, "extractive", []
+        return config.ABSTAIN_MESSAGE, True, mode, []
 
     # Keep only chunks that carry real signal for the citations/context.
     relevant = [s for s in scored if s.score >= config.SCORE_THRESHOLD] or scored[:1]
     citations = build_citations(relevant, question)
 
-    # Try optional LLM synthesis; fall back to extractive on any issue.
-    contexts = [s.chunk.text for s in relevant]
-    llm_answer = llm.synthesize(question, contexts)
-    if llm_answer:
-        abstained = llm_answer.strip() == config.ABSTAIN_MESSAGE
-        return llm_answer, abstained, "llm", ([] if abstained else citations)
+    # Thinking mode: let the LLM reason over the same grounded context.
+    if mode == "thinking":
+        contexts = [s.chunk.text for s in relevant]
+        llm_answer = llm.synthesize(question, contexts)
+        if llm_answer:
+            abstained = llm_answer.strip() == config.ABSTAIN_MESSAGE
+            return llm_answer, abstained, "thinking", ([] if abstained else citations)
+        # No key / call failed -> transparently fall back to the fast engine.
+        logger.info("Thinking unavailable; using fast (extractive) for: %s", question)
 
     answer = _focused_answer(question, [s.chunk for s in relevant])
-    return answer, False, "extractive", citations
+    return answer, False, "fast", citations

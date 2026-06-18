@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "./api";
+import { IconSpark } from "./lib/icons";
 import Sidebar from "./components/Sidebar";
+import Button from "./components/ui/Button";
 import { ErrorState } from "./components/ui/States";
 import Overview from "./components/views/Overview";
 import Ask from "./components/views/Ask";
 import Evaluation from "./components/views/Evaluation";
 
 const HEADINGS = {
-  overview: { title: "Overview", sub: "Upload documents, then ask grounded questions." },
   ask: { title: "Ask", sub: "Questions are answered only from retrieved evidence." },
   evaluation: { title: "Evaluation", sub: "How well the assistant stays grounded." },
 };
@@ -20,6 +21,13 @@ export default function App() {
   const [online, setOnline] = useState(true);
   const [seeding, setSeeding] = useState(false);
   const [demoSignal, setDemoSignal] = useState(0);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 60);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -67,10 +75,34 @@ export default function App() {
       <Sidebar view={view} setView={setView} online={online} mode={health?.answer_mode} />
 
       <main className="main">
-        <div className="view-head">
-          <h1>{head.title}</h1>
-          <p>{head.sub}</p>
+        <div className={`topbar ${scrolled ? "show" : ""}`}>
+          <span className="topbar-brand">
+            <span
+              style={{
+                width: 22, height: 22, borderRadius: 7,
+                background: "var(--accent-grad)", display: "inline-grid", placeItems: "center",
+              }}
+            >
+              <IconSpark size={13} />
+            </span>
+            FinanceFlow AI
+          </span>
+          <nav className="topbar-nav">
+            <a onClick={() => setView("overview")}>Overview</a>
+            <a onClick={() => setView("ask")}>Ask</a>
+            <a onClick={() => setView("evaluation")}>Evaluation</a>
+          </nav>
+          <Button variant="primary" size="sm" loading={seeding} onClick={onTryDemo}>
+            Try demo
+          </Button>
         </div>
+
+        {view !== "overview" && (
+          <div className="view-head">
+            <h1>{head.title}</h1>
+            <p>{head.sub}</p>
+          </div>
+        )}
 
         {!online && (
           <div style={{ marginBottom: 20 }}>
@@ -88,6 +120,7 @@ export default function App() {
             reload={reload}
             onTryDemo={onTryDemo}
             seeding={seeding}
+            onOpenEval={() => setView("evaluation")}
           />
         )}
         {view === "ask" && (

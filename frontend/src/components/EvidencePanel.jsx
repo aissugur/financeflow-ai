@@ -13,7 +13,12 @@ function EvidenceItem({ citation, rank, defaultOpen }) {
 
   return (
     <div className="evidence-item">
-      <button className="evidence-item-head" onClick={() => setOpen((o) => !o)}>
+      <button
+        className="evidence-item-head"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-label={`Evidence ${rank} from ${citation.document_name}`}
+      >
         <span className="evidence-rank">{rank}</span>
         <span style={{ flex: 1, minWidth: 0 }}>
           <span className="evidence-doc">{citation.document_name}</span>

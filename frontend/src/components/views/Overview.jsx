@@ -77,7 +77,7 @@ export default function Overview({ documents, loading, reload, onTryDemo, seedin
         <span className="hero-eyebrow">
           <IconSpark size={14} /> Document intelligence
         </span>
-        <h1 className="hero-title">Source-backed AI assistant for business documents.</h1>
+        <h2 className="hero-title">Source-backed AI assistant for business documents.</h2>
         <p className="hero-sub">
           Upload an invoice, contract, or finance note, ask a question in plain
           English, and get an answer grounded in the document — with citations you
@@ -98,7 +98,7 @@ export default function Overview({ documents, loading, reload, onTryDemo, seedin
           <div className="trust-item" key={title}>
             <Icon size={18} />
             <div>
-              <h4>{title}</h4>
+              <h3>{title}</h3>
               <p>{text}</p>
             </div>
           </div>

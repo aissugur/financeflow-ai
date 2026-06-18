@@ -53,3 +53,6 @@ _scratch*
 ориг.xml
 *.sav
 *.prj
+
+# ---- graphify generated output ----
+graphify-out/

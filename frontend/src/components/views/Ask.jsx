@@ -4,7 +4,7 @@ import Badge from "../ui/Badge";
 import Button from "../ui/Button";
 import Card from "../ui/Card";
 import { Select, Textarea } from "../ui/Field";
-import { EmptyState, ErrorState, LoadingState } from "../ui/States";
+import { EmptyState, LoadingState } from "../ui/States";
 import EvidencePanel from "../EvidencePanel";
 
 const DEMO = [
@@ -126,19 +126,17 @@ export default function Ask({ documents, demoSignal, onDemoConsumed }) {
           >
             <Textarea
               label="Your question"
+              id="ask-question"
               rows={3}
               placeholder="e.g. What is the total amount due?"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
+              error={error || undefined}
             />
             <Button variant="primary" type="submit" loading={loading} disabled={!question.trim()}>
               {loading ? "Retrieving…" : "Ask"}
             </Button>
           </form>
-
-          <div style={{ marginTop: 16 }}>
-            <ErrorState>{error}</ErrorState>
-          </div>
 
           {loading && (
             <div className="answer-card">

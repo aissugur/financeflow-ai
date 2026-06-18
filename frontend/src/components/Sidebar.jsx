@@ -18,12 +18,14 @@ export default function Sidebar({ view, setView, online, mode }) {
         </span>
       </div>
 
-      <nav className="nav">
+      <nav className="nav" aria-label="Primary">
         {NAV.map(({ id, label, Icon }) => (
           <button
             key={id}
             className={`nav-item ${view === id ? "active" : ""}`}
             onClick={() => setView(id)}
+            aria-label={label}
+            aria-current={view === id ? "page" : undefined}
           >
             <Icon />
             <span className="label">{label}</span>
@@ -32,7 +34,11 @@ export default function Sidebar({ view, setView, online, mode }) {
       </nav>
 
       <div className="sidebar-foot">
-        <span className={`status-dot ${online ? "" : "off"}`} />
+        <span
+          className={`status-dot ${online ? "" : "off"}`}
+          role="img"
+          aria-label={online ? "API online" : "API offline"}
+        />
         <span className="brand-sub-hide">
           {online ? `API online · ${mode || "extractive"}` : "API offline"}
         </span>

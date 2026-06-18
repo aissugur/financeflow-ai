@@ -11,6 +11,12 @@ const base = (size) => ({
   className: "ico",
 });
 
+export const IconCheck = ({ size = 18 }) => (
+  <svg {...base(size)}>
+    <path d="M20 6 9 17l-5-5" />
+  </svg>
+);
+
 export const IconOverview = ({ size = 18 }) => (
   <svg {...base(size)}>
     <rect x="3" y="3" width="7" height="7" rx="1.5" />

@@ -3,8 +3,10 @@ import { api } from "../../api";
 import Badge from "../ui/Badge";
 import Button from "../ui/Button";
 import Card from "../ui/Card";
-import { ErrorState, LoadingState } from "../ui/States";
+import { EmptyState, ErrorState, LoadingState } from "../ui/States";
 import MetricCard from "../MetricCard";
+import EvalChart from "../EvalChart";
+import { IconEval } from "../../lib/icons";
 
 export default function Evaluation() {
   const [data, setData] = useState(null);
@@ -75,40 +77,48 @@ export default function Evaluation() {
             <MetricCard value={pct(m.evidence_match_rate)} label="Evidence match" />
           </div>
 
+          <EvalChart metrics={m} />
+
           <div>
             <div className="section-title">
               <h2>Test questions</h2>
               <span className="muted">{data.cases.length} cases</span>
             </div>
-            <div className="eval-table">
-              {data.cases.map((c, i) => (
-                <div className="eval-row" key={i}>
-                  <Badge tone={c.passed ? "success" : "danger"} dot>
-                    {c.passed ? "PASS" : "FAIL"}
-                  </Badge>
-                  <div>
-                    <div className="eval-q">{c.question}</div>
-                    <div className="eval-meta">
-                      <span>{c.document}</span>
-                      <span>·</span>
-                      <span>expects {c.expectation.replace("_", " ")}</span>
+            {data.cases.length === 0 ? (
+              <EmptyState title="No test cases" icon={<IconEval />}>
+                The golden dataset returned no cases to score.
+              </EmptyState>
+            ) : (
+              <div className="eval-table">
+                {data.cases.map((c, i) => (
+                  <div className="eval-row" key={i}>
+                    <Badge tone={c.passed ? "success" : "danger"} dot>
+                      {c.passed ? "PASS" : "FAIL"}
+                    </Badge>
+                    <div>
+                      <div className="eval-q">{c.question}</div>
+                      <div className="eval-meta">
+                        <span>{c.document}</span>
+                        <span>·</span>
+                        <span>expects {c.expectation.replace("_", " ")}</span>
+                      </div>
+                    </div>
+                    <div className="eval-badges">
+                      {c.abstained ? (
+                        <Badge tone="warn">abstained</Badge>
+                      ) : (
+                        <Badge tone="accent">{c.citations.length} cited</Badge>
+                      )}
+                      {c.expectation === "answerable" && (
+                        <Badge tone={c.evidence_found ? "success" : "danger"} dot>
+                          {c.evidence_found ? "evidence found" : "no evidence"}
+                        </Badge>
+                      )}
                     </div>
                   </div>
-                  <div className="eval-badges">
-                    {c.abstained ? (
-                      <Badge tone="warn">abstained</Badge>
-                    ) : (
-                      <Badge tone="accent">{c.citations.length} cited</Badge>
-                    )}
-                    {c.expectation === "answerable" && (
-                      <Badge tone={c.evidence_found ? "success" : "danger"}>
-                        {c.evidence_found ? "evidence ✓" : "evidence ✗"}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </>
       )}

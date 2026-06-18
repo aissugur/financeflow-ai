@@ -1,5 +1,5 @@
 // Shared UI states: LoadingState (shimmer), EmptyState, ErrorState, SuccessNote.
-import { IconAlert, IconInbox } from "../../lib/icons";
+import { IconAlert, IconCheck, IconInbox } from "../../lib/icons";
 
 export function LoadingState({ lines = 3, label }) {
   return (
@@ -31,7 +31,7 @@ export function EmptyState({ title, children, icon }) {
 export function ErrorState({ children }) {
   if (!children) return null;
   return (
-    <div className="errorbox">
+    <div className="errorbox" role="alert">
       <IconAlert size={16} />
       <span>{children}</span>
     </div>
@@ -40,5 +40,10 @@ export function ErrorState({ children }) {
 
 export function SuccessNote({ children }) {
   if (!children) return null;
-  return <div className="successbox">✓ <span>{children}</span></div>;
+  return (
+    <div className="successbox" role="status" aria-live="polite">
+      <IconCheck size={16} />
+      <span>{children}</span>
+    </div>
+  );
 }

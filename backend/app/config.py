@@ -24,11 +24,11 @@ DATABASE_URL = f"sqlite:///{DB_PATH}"
 SAMPLE_DOCS_DIR = BACKEND_DIR.parent / "sample_docs"
 
 # Answer behaviour.
-# Two request-time answer modes:
+# Two request-time answer modes (chosen per /ask call, not globally):
 #   "fast"     -> extractive engine: instant, offline, free (no API key needed).
 #   "thinking" -> LLM reasons on the fly with adaptive thinking (needs an API
 #                 key); automatically falls back to "fast" if no key is set.
-ANSWER_MODE = os.getenv("ANSWER_MODE", "extractive").strip().lower()  # legacy/health only
+DEFAULT_ANSWER_MODE = "fast"
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "anthropic").strip().lower()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "").strip()
@@ -36,6 +36,11 @@ ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "").strip()
 # Model used by "thinking" mode (reasons with adaptive thinking on Anthropic).
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6").strip()
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o").strip()
+
+# Optional OpenAI-compatible base URL. Set this to point the OpenAI client at any
+# OpenAI-API-compatible provider (e.g. a free tier like Mistral, Cohere, LLM7) so
+# "thinking" mode works without an OpenAI account. Empty = real OpenAI.
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "").strip()
 
 # True if any provider key is configured (so "thinking" mode is actually usable).
 LLM_AVAILABLE = bool(

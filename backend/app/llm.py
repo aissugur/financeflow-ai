@@ -68,7 +68,11 @@ def _openai(question: str, contexts: List[str]) -> Optional[str]:
         return None
     from openai import OpenAI  # lazy import
 
-    client = OpenAI(api_key=config.OPENAI_API_KEY)
+    # base_url lets us target any OpenAI-compatible provider (incl. free tiers).
+    kwargs = {"api_key": config.OPENAI_API_KEY}
+    if config.OPENAI_BASE_URL:
+        kwargs["base_url"] = config.OPENAI_BASE_URL
+    client = OpenAI(**kwargs)
     resp = client.chat.completions.create(
         model=config.OPENAI_MODEL,
         temperature=0,

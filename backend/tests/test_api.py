@@ -43,6 +43,24 @@ def test_upload_rejects_empty_file(client):
     assert res.status_code == 400
 
 
+def test_upload_rejects_oversized_file(client):
+    big = b"x" * (10 * 1024 * 1024 + 1)  # one byte over the 10 MB limit
+    res = client.post(
+        "/documents/upload", files={"file": ("big.txt", big, "text/plain")}
+    )
+    assert res.status_code == 413
+
+
+def test_health_reports_llm_availability(client):
+    body = client.get("/health").json()
+    assert body["status"] == "ok"
+    assert body["default_mode"] == "fast"
+    assert isinstance(body["llm_available"], bool)
+    # The provider is only surfaced when an LLM is actually usable.
+    if not body["llm_available"]:
+        assert body["llm_provider"] is None
+
+
 def _upload_invoice(client):
     content = (
         b"Invoice Number INV-2025-0473. Due Date April 2 2025. "

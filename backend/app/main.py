@@ -80,11 +80,14 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 # --------------------------------------------------------------------------- #
 @app.get("/health", tags=["Health"], summary="Health check")
 def health():
-    """Return service status and the active answer mode (extractive or llm)."""
+    """Return service status and whether the optional 'thinking' (LLM) mode is
+    actually usable. 'fast' mode always works; 'thinking' needs a provider key,
+    so the frontend uses `llm_available` to avoid offering a silent no-op."""
     return {
         "status": "ok",
-        "answer_mode": config.ANSWER_MODE,
-        "llm_provider": config.LLM_PROVIDER if config.ANSWER_MODE == "llm" else None,
+        "default_mode": config.DEFAULT_ANSWER_MODE,
+        "llm_available": config.LLM_AVAILABLE,
+        "llm_provider": config.LLM_PROVIDER if config.LLM_AVAILABLE else None,
     }
 
 
@@ -117,12 +120,23 @@ async def upload_document(
             detail=f"Unsupported file type '{ext or 'unknown'}'. Allowed types: PDF, TXT.",
         )
 
-    raw = await file.read()
+    # Read the upload in bounded blocks and stop the moment it exceeds the limit,
+    # so an oversized body can't be fully materialised in memory before we reject
+    # it. (Starlette spools large bodies to a temp file, but an unbounded
+    # `file.read()` would still load the whole thing into one bytes object.)
+    limit = config.MAX_UPLOAD_BYTES
+    buf = bytearray()
+    while True:
+        block = await file.read(1024 * 1024)  # 1 MB at a time
+        if not block:
+            break
+        buf.extend(block)
+        if len(buf) > limit:
+            mb = limit // (1024 * 1024)
+            raise HTTPException(status_code=413, detail=f"File too large (max {mb} MB).")
+    raw = bytes(buf)
     if not raw:
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
-    if len(raw) > config.MAX_UPLOAD_BYTES:
-        mb = config.MAX_UPLOAD_BYTES // (1024 * 1024)
-        raise HTTPException(status_code=413, detail=f"File too large (max {mb} MB).")
 
     logger.info("Upload received: %s (%d bytes)", original_name, len(raw))
 

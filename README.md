@@ -1,3 +1,18 @@
+---
+title: FinanceFlow AI
+emoji: 📄
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 7860
+pinned: false
+license: mit
+---
+
+<!-- ^ The YAML block above configures Hugging Face Spaces (Docker deploy). It must
+     stay at the very top for HF to read it; GitHub just renders it as a small block.
+     Remove it if you don't deploy to HF Spaces. -->
+
 # FinanceFlow AI
 
 ![CI](https://github.com/aissugur/financeflow-ai/actions/workflows/ci.yml/badge.svg)

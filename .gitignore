@@ -9,6 +9,7 @@ env/
 # ---- Node / frontend ----
 node_modules/
 frontend/dist/
+backend/static/
 
 # ---- Env files (never commit real secrets; .env.example IS committed) ----
 .env

@@ -52,6 +52,15 @@ LLM_AVAILABLE = bool(
 TOP_K = int(os.getenv("TOP_K", "4"))
 SCORE_THRESHOLD = float(os.getenv("SCORE_THRESHOLD", "0.12"))
 
+# Optional second-stage reranking (cross-encoder over the TF-IDF candidates).
+# Pattern adapted from the hybrid-search RAG examples in awesome-llm-apps
+# (Apache-2.0). It degrades gracefully to pure TF-IDF when flashrank or the model
+# is unavailable, and the abstention DECISION always stays on the TF-IDF scores —
+# reranking only reorders/selects the evidence that is cited and fed to the LLM.
+RERANK_ENABLED = os.getenv("RERANK_ENABLED", "1").strip().lower() not in {"0", "false", "no", ""}
+RERANK_CANDIDATES = int(os.getenv("RERANK_CANDIDATES", "12"))  # TF-IDF pool to rerank
+RERANK_MODEL = os.getenv("RERANK_MODEL", "ms-marco-TinyBERT-L-2-v2").strip()
+
 # Upload limits / validation.
 ALLOWED_EXTENSIONS = {".pdf", ".txt"}
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB

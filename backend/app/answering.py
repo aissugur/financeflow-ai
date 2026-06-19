@@ -12,7 +12,7 @@ evidence (citations) so the user can verify.
 import logging
 from typing import List, Optional, Set, Tuple
 
-from . import config, llm
+from . import config, llm, reranking
 from .models import Chunk
 from .retrieval import ScoredChunk, rank_chunks, tokenize
 from .schemas import Citation
@@ -107,11 +107,17 @@ def answer_question(question: str, chunks: List[Chunk], mode: str = "fast"):
                        or the call fails. The returned mode reflects what actually
                        produced the answer ("fast" | "thinking").
     """
-    scored = rank_chunks(question, chunks, top_k=config.TOP_K)
-    top_score = scored[0].score if scored else 0.0
+    # Stage 1: TF-IDF retrieval. Pull a larger candidate pool when reranking is
+    # on, but the abstention DECISION below always uses the original top-K, so the
+    # behaviour (and the golden eval) is identical whether or not the reranker is
+    # present.
+    pool_k = config.RERANK_CANDIDATES if reranking.is_enabled() else config.TOP_K
+    scored = rank_chunks(question, chunks, top_k=pool_k)
+    gate_chunks = scored[: config.TOP_K]
+    top_score = gate_chunks[0].score if gate_chunks else 0.0
 
     # Anti-hallucination guard #1: the best evidence must clear a score floor.
-    if not scored or top_score < config.SCORE_THRESHOLD:
+    if not gate_chunks or top_score < config.SCORE_THRESHOLD:
         logger.info("Abstain (low score %.3f) for question: %s", top_score, question)
         return config.ABSTAIN_MESSAGE, True, mode, []
 
@@ -121,7 +127,7 @@ def answer_question(question: str, chunks: List[Chunk], mode: str = "fast"):
     # and matching only the word "number") from producing a confident answer.
     q_terms = set(tokenize(question))
     evidence_terms: Set[str] = set()
-    for s in scored:
+    for s in gate_chunks:
         evidence_terms |= set(tokenize(s.chunk.text))
     matched = len(q_terms & evidence_terms)
     required = min(2, len(q_terms))  # 1-word questions only need 1 match
@@ -134,8 +140,11 @@ def answer_question(question: str, chunks: List[Chunk], mode: str = "fast"):
         )
         return config.ABSTAIN_MESSAGE, True, mode, []
 
-    # Keep only chunks that carry real signal for the citations/context.
-    relevant = [s for s in scored if s.score >= config.SCORE_THRESHOLD] or scored[:1]
+    # Stage 2: keep the chunks with real signal, then rerank so the most relevant
+    # evidence is cited first / fed to the LLM first (graceful no-op fallback to
+    # TF-IDF order when the reranker is unavailable).
+    relevant_pool = [s for s in scored if s.score >= config.SCORE_THRESHOLD] or scored[:1]
+    relevant = reranking.rerank(question, relevant_pool, top_k=config.TOP_K)
     citations = build_citations(relevant, question)
 
     # Thinking mode: let the LLM reason over the same grounded context.

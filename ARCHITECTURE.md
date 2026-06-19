@@ -33,7 +33,8 @@ container; in local dev, Vite proxies `/api` to `http://127.0.0.1:8000`.
 | `schemas.py` | Pydantic request/response models (typed I/O, Swagger) |
 | `parsing.py` | Text extraction: TXT (whole file) and PDF (per page, via `pypdf`) |
 | `chunking.py` | Overlapping word-window chunking |
-| `retrieval.py` | Tokenizer + TF-IDF ranker (`rank_chunks`) |
+| `retrieval.py` | Tokenizer + TF-IDF ranker (`rank_chunks`) — offline first stage |
+| `reranking.py` | Optional cross-encoder reranking (FlashRank) of the TF-IDF candidates; graceful fallback to TF-IDF order when unavailable |
 | `answering.py` | Abstention gates, focused extractive answer, citation builder |
 | `llm.py` | Optional OpenAI/Anthropic synthesis with graceful fallback |
 | `ingest.py` | Shared parse → chunk → persist pipeline |

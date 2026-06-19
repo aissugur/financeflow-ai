@@ -13,7 +13,7 @@ const DEMO = [
   { q: "What is the customer's social security number?", doc: "sample_invoice.txt", hint: "Correctly abstains" },
 ];
 
-export default function Ask({ documents, demoSignal, onDemoConsumed }) {
+export default function Ask({ documents, demoSignal, llmAvailable, onDemoConsumed }) {
   const processed = documents.filter((d) => d.status === "processed");
   const [docId, setDocId] = useState("");
   const [question, setQuestion] = useState("");
@@ -23,6 +23,12 @@ export default function Ask({ documents, demoSignal, onDemoConsumed }) {
   const [error, setError] = useState("");
   const [mode, setMode] = useState("fast"); // "fast" (extractive) | "thinking" (LLM)
   const lastDemo = useRef(0);
+
+  // Thinking needs a provider API key. If the backend reports none, don't let the
+  // UI sit on a mode that would silently fall back to Fast — switch back to Fast.
+  useEffect(() => {
+    if (llmAvailable === false && mode === "thinking") setMode("fast");
+  }, [llmAvailable, mode]);
 
   // Default to the sample invoice for a deterministic demo, else the first doc.
   useEffect(() => {
@@ -51,7 +57,7 @@ export default function Ask({ documents, demoSignal, onDemoConsumed }) {
     setResult(null);
     try {
       const res = await api.ask(Number(id), q.trim(), mode);
-      setResult(res);
+      setResult({ ...res, requestedMode: mode });
       await loadHistory(id);
     } catch (err) {
       setError(err.message);
@@ -134,12 +140,25 @@ export default function Ask({ documents, demoSignal, onDemoConsumed }) {
               type="button"
               className={mode === "thinking" ? "seg active" : "seg"}
               aria-pressed={mode === "thinking"}
+              disabled={llmAvailable === false}
               onClick={() => setMode("thinking")}
+              title={
+                llmAvailable === false
+                  ? "Add a provider API key to enable Thinking mode"
+                  : undefined
+              }
             >
               🧠 Thinking
-              <small>LLM reasons · needs API key</small>
+              <small>
+                {llmAvailable === false ? "Needs API key" : "LLM reasons · grounded"}
+              </small>
             </button>
           </div>
+          {llmAvailable === false && (
+            <p className="seg-note">
+              Thinking mode needs a provider API key — running in Fast mode.
+            </p>
+          )}
 
           <form
             onSubmit={(e) => {
@@ -187,6 +206,11 @@ export default function Ask({ documents, demoSignal, onDemoConsumed }) {
               <p className={`answer-body ${result.abstained ? "dim" : ""}`}>
                 {result.answer}
               </p>
+              {result.requestedMode === "thinking" && result.mode === "fast" && (
+                <p className="seg-note" style={{ margin: "10px 0 0" }}>
+                  Thinking was unavailable for this request — answered with Fast.
+                </p>
+              )}
             </div>
           )}
         </Card>

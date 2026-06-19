@@ -6,7 +6,10 @@ const NAV = [
   { id: "evaluation", label: "Evaluation", Icon: IconEval },
 ];
 
-export default function Sidebar({ view, setView, online, mode }) {
+export default function Sidebar({ view, setView, online, llmAvailable }) {
+  const status = online
+    ? `API online · ${llmAvailable ? "Thinking ready" : "Fast mode"}`
+    : "API offline";
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -39,9 +42,7 @@ export default function Sidebar({ view, setView, online, mode }) {
           role="img"
           aria-label={online ? "API online" : "API offline"}
         />
-        <span className="brand-sub-hide">
-          {online ? `API online · ${mode || "extractive"}` : "API offline"}
-        </span>
+        <span className="brand-sub-hide">{status}</span>
       </div>
     </aside>
   );

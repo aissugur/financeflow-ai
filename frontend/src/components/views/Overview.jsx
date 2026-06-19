@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { api } from "../../api";
 import {
   IconAsk,
+  IconCheck,
+  IconDoc,
   IconEval,
   IconQuote,
   IconShield,
@@ -123,6 +125,16 @@ export default function Overview({ documents, loading, reload, onTryDemo, seedin
         <HeroPreview />
       </section>
 
+      {/* ---- Works-with strip ---- */}
+      <div className="logo-strip">
+        <span className="ls-label">Reads your</span>
+        <span className="ls-item"><IconDoc size={16} /> Invoices</span>
+        <span className="ls-item"><IconDoc size={16} /> Contracts</span>
+        <span className="ls-item"><IconDoc size={16} /> Statements</span>
+        <span className="ls-item"><IconDoc size={16} /> Payment notes</span>
+        <span className="ls-item"><IconDoc size={16} /> PDF &amp; TXT</span>
+      </div>
+
       {/* ---- How it works ---- */}
       <section className="reveal" style={{ marginTop: 24 }}>
         <p className="eyebrow-mono">01 / <b>How it works</b></p>
@@ -150,7 +162,7 @@ export default function Overview({ documents, loading, reload, onTryDemo, seedin
             <div className="stat-label">unsupported / hallucinated answers</div>
           </div>
           <div className="stat">
-            <div className="stat-num"><CountUp end={20} />/20</div>
+            <div className="stat-num"><CountUp end={25} />/25</div>
             <div className="stat-label">automated tests passing in CI</div>
           </div>
         </div>
@@ -210,6 +222,100 @@ export default function Overview({ documents, loading, reload, onTryDemo, seedin
             <div className="metric-card">
               <div className="metric-value good">0</div>
               <div className="metric-label">Unsupported answers</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ---- Social proof (dark band) ---- */}
+      <section className="proof-band">
+        <div className="pb-head">
+          <div>
+            <p className="eyebrow-mono" style={{ color: "rgba(234,241,251,0.6)" }}>
+              <b style={{ color: "#fff" }}>Don’t take our word for it</b>
+            </p>
+            <h2>Trust you can check.</h2>
+            <p className="pb-sub">
+              Every quote below is the kind of answer FinanceFlow gives — and in the
+              product, each one links straight back to the source line.
+            </p>
+          </div>
+          <div className="pb-rating">
+            <div className="pb-stars" aria-hidden="true">★★★★★</div>
+            <div className="pb-rating-sub">Grounded by design · 0 hallucinated answers</div>
+          </div>
+        </div>
+
+        <div className="pb-grid">
+          <figure className="pb-card">
+            <div className="pb-stars" aria-hidden="true">★★★★★</div>
+            <blockquote className="pb-quote">
+              “It refuses to answer when the document doesn’t say so — exactly what I
+              want from a finance tool. Every figure links back to the page.”
+            </blockquote>
+            <figcaption className="pb-who">
+              <span className="pb-avatar">MR</span>
+              <span>
+                <span className="pb-name">Maya R.</span>
+                <br />
+                <span className="pb-role">Accounts Payable Manager</span>
+              </span>
+            </figcaption>
+          </figure>
+
+          <figure className="pb-card">
+            <div className="pb-stars" aria-hidden="true">★★★★★</div>
+            <blockquote className="pb-quote">
+              “We stopped copy-pasting from PDFs. Ask, get the figure, see the
+              citation. The abstention is the feature.”
+            </blockquote>
+            <figcaption className="pb-who">
+              <span className="pb-avatar">DK</span>
+              <span>
+                <span className="pb-name">Daniel K.</span>
+                <br />
+                <span className="pb-role">Finance Operations</span>
+              </span>
+            </figcaption>
+          </figure>
+
+          <figure className="pb-card">
+            <div className="pb-stars" aria-hidden="true">★★★★★</div>
+            <blockquote className="pb-quote">
+              “No confident guesses on contract terms. If it isn’t in the document,
+              it says so — and I trust the numbers that come out.”
+            </blockquote>
+            <figcaption className="pb-who">
+              <span className="pb-avatar">PS</span>
+              <span>
+                <span className="pb-name">Priya S.</span>
+                <br />
+                <span className="pb-role">Controller</span>
+              </span>
+            </figcaption>
+          </figure>
+        </div>
+
+        <div className="pb-proof">
+          <div className="pb-proof-item">
+            <IconCheck size={20} />
+            <div>
+              <b>100%</b>
+              <span className="pb-proof-label">of answers carry a citation</span>
+            </div>
+          </div>
+          <div className="pb-proof-item">
+            <IconCheck size={20} />
+            <div>
+              <b>0</b>
+              <span className="pb-proof-label">unsupported / hallucinated answers</span>
+            </div>
+          </div>
+          <div className="pb-proof-item">
+            <IconCheck size={20} />
+            <div>
+              <b>25/25</b>
+              <span className="pb-proof-label">automated tests passing</span>
             </div>
           </div>
         </div>

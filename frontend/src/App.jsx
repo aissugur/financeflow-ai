@@ -72,7 +72,12 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <Sidebar view={view} setView={setView} online={online} mode={health?.answer_mode} />
+      <Sidebar
+        view={view}
+        setView={setView}
+        online={online}
+        llmAvailable={health?.llm_available}
+      />
 
       <main className="main">
         <div className={`topbar ${scrolled ? "show" : ""}`}>
@@ -127,6 +132,7 @@ export default function App() {
           <Ask
             documents={documents}
             demoSignal={demoSignal}
+            llmAvailable={health?.llm_available}
             onDemoConsumed={() => {}}
           />
         )}

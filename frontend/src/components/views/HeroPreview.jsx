@@ -49,15 +49,6 @@ export default function HeroPreview() {
             Total Due: <mark>$48,250.00</mark> — Terms: Net 30 (due Oct 14, 2025)
           </div>
         </div>
-
-        <svg
-          className="connector"
-          viewBox="0 0 60 200"
-          preserveAspectRatio="none"
-          aria-hidden="true"
-        >
-          <path d="M52 46 C 8 78, 8 132, 52 158" />
-        </svg>
       </div>
 
       <div className="preview-card preview-peek" aria-hidden="true">

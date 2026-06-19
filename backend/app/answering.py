@@ -107,11 +107,19 @@ def answer_question(question: str, chunks: List[Chunk], mode: str = "fast"):
                        or the call fails. The returned mode reflects what actually
                        produced the answer ("fast" | "thinking").
     """
-    # Stage 1: TF-IDF retrieval. Pull a larger candidate pool when reranking is
-    # on, but the abstention DECISION below always uses the original top-K, so the
-    # behaviour (and the golden eval) is identical whether or not the reranker is
-    # present.
-    pool_k = config.RERANK_CANDIDATES if reranking.is_enabled() else config.TOP_K
+    # Stage 1: TF-IDF retrieval. Pull a larger candidate pool when reranking is on.
+    # The abstention DECISION (below) always runs on the original top-K TF-IDF
+    # scores, so it is identical with or without reranking — as are citation
+    # coverage and the unsupported-answer count. Reranking only reorders/selects
+    # WHICH evidence is cited (by design the cross-encoder may promote a chunk
+    # ranked outside the top-K); when flashrank is absent the cited set is the same
+    # top-K TF-IDF slice as a no-rerank build. max() keeps the gate's top-K intact
+    # even if RERANK_CANDIDATES is mis-set below TOP_K.
+    pool_k = (
+        max(config.TOP_K, config.RERANK_CANDIDATES)
+        if reranking.is_enabled()
+        else config.TOP_K
+    )
     scored = rank_chunks(question, chunks, top_k=pool_k)
     gate_chunks = scored[: config.TOP_K]
     top_score = gate_chunks[0].score if gate_chunks else 0.0

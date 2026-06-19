@@ -16,7 +16,8 @@ FROM python:3.12-slim
 WORKDIR /app
 
 COPY backend/requirements.txt ./requirements.txt
-# Include the optional LLM SDKs so "Thinking" mode works when a key is provided.
+# requirements.txt already pins flashrank (the reranker). Add the optional LLM
+# SDKs too so "Thinking" mode works when a key is provided.
 RUN pip install --no-cache-dir -r requirements.txt openai anthropic
 
 COPY backend/app ./app

@@ -227,73 +227,18 @@ export default function Overview({ documents, loading, reload, onTryDemo, seedin
         </div>
       </section>
 
-      {/* ---- Social proof (dark band) ---- */}
+      {/* ---- Proof band (dark) ---- */}
       <section className="proof-band">
         <div className="pb-head">
-          <div>
-            <p className="eyebrow-mono" style={{ color: "rgba(234,241,251,0.6)" }}>
-              <b style={{ color: "#fff" }}>Don’t take our word for it</b>
-            </p>
-            <h2>Trust you can check.</h2>
-            <p className="pb-sub">
-              Every quote below is the kind of answer FinanceFlow gives — and in the
-              product, each one links straight back to the source line.
-            </p>
-          </div>
-          <div className="pb-rating">
-            <div className="pb-stars" aria-hidden="true">★★★★★</div>
-            <div className="pb-rating-sub">Grounded by design · 0 hallucinated answers</div>
-          </div>
-        </div>
-
-        <div className="pb-grid">
-          <figure className="pb-card">
-            <div className="pb-stars" aria-hidden="true">★★★★★</div>
-            <blockquote className="pb-quote">
-              “It refuses to answer when the document doesn’t say so — exactly what I
-              want from a finance tool. Every figure links back to the page.”
-            </blockquote>
-            <figcaption className="pb-who">
-              <span className="pb-avatar">MR</span>
-              <span>
-                <span className="pb-name">Maya R.</span>
-                <br />
-                <span className="pb-role">Accounts Payable Manager</span>
-              </span>
-            </figcaption>
-          </figure>
-
-          <figure className="pb-card">
-            <div className="pb-stars" aria-hidden="true">★★★★★</div>
-            <blockquote className="pb-quote">
-              “We stopped copy-pasting from PDFs. Ask, get the figure, see the
-              citation. The abstention is the feature.”
-            </blockquote>
-            <figcaption className="pb-who">
-              <span className="pb-avatar">DK</span>
-              <span>
-                <span className="pb-name">Daniel K.</span>
-                <br />
-                <span className="pb-role">Finance Operations</span>
-              </span>
-            </figcaption>
-          </figure>
-
-          <figure className="pb-card">
-            <div className="pb-stars" aria-hidden="true">★★★★★</div>
-            <blockquote className="pb-quote">
-              “No confident guesses on contract terms. If it isn’t in the document,
-              it says so — and I trust the numbers that come out.”
-            </blockquote>
-            <figcaption className="pb-who">
-              <span className="pb-avatar">PS</span>
-              <span>
-                <span className="pb-name">Priya S.</span>
-                <br />
-                <span className="pb-role">Controller</span>
-              </span>
-            </figcaption>
-          </figure>
+          <p className="eyebrow-mono" style={{ color: "rgba(234,241,251,0.6)" }}>
+            <b style={{ color: "#fff" }}>Proof, not promises</b>
+          </p>
+          <h2>Trust you can check.</h2>
+          <p className="pb-sub">
+            FinanceFlow doesn’t ask you to trust it — it shows its work. Every answer
+            links back to the exact source line, it abstains when the document doesn’t
+            say, and a bundled evaluation grades that grounding on every run.
+          </p>
         </div>
 
         <div className="pb-proof">

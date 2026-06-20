@@ -113,6 +113,13 @@ body {
   color: var(--text);
   background: var(--bg);
   overflow-x: hidden;
+  user-select: none;            /* app-like: no text-select caret on the UI */
+  -webkit-user-select: none;
+}
+/* but keep typing/selection working in form fields */
+input, textarea {
+  user-select: text;
+  -webkit-user-select: text;
 }
 /* Drifting gradient-mesh */
 body::before {

@@ -110,6 +110,7 @@ def health():
         "default_mode": config.DEFAULT_ANSWER_MODE,
         "llm_available": config.LLM_AVAILABLE,
         "llm_provider": config.LLM_PROVIDER if config.LLM_AVAILABLE else None,
+        "google_client_id": config.GOOGLE_CLIENT_ID or None,
     }
 
 
@@ -268,6 +269,7 @@ def ask(
     db.add(
         QA(
             document_id=document.id,
+            user_id=user.id,
             question=question,
             answer=answer,
             abstained=1 if abstained else 0,
@@ -290,8 +292,9 @@ def history(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    query = _scoped(db.query(QA).join(Document, QA.document_id == Document.id), user)
-    query = query.order_by(QA.created_at.desc())
+    # Scope strictly to the user's OWN questions (so history never leaks across
+    # users even when they asked over the same shared demo document).
+    query = db.query(QA).filter(QA.user_id == user.id).order_by(QA.created_at.desc())
     if document_id is not None:
         _owned_document(db, user, document_id)  # 404 if not accessible
         query = query.filter(QA.document_id == document_id)
@@ -328,7 +331,9 @@ def history(
         "coverage, and evidence-match metrics."
     ),
 )
-def evaluate(db: Session = Depends(get_db)):
+def evaluate(
+    db: Session = Depends(get_db), user: User = Depends(get_current_user)
+):
     return run_evaluation(db)
 
 
@@ -343,7 +348,9 @@ def evaluate(db: Session = Depends(get_db)):
     description="Ingests the sample invoice, contract, and payment note (idempotent) "
     "so a reviewer can try the app in seconds.",
 )
-def seed_demo(db: Session = Depends(get_db)):
+def seed_demo(
+    db: Session = Depends(get_db), user: User = Depends(get_current_user)
+):
     docs = ensure_sample_documents(db)
     seeded = sorted(docs.values(), key=lambda d: d.filename)
     logger.info("Demo seed requested: %d sample documents available", len(seeded))

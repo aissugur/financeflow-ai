@@ -89,7 +89,7 @@ def build_citations(scored: List[ScoredChunk], question: str) -> List[Citation]:
         citations.append(
             Citation(
                 document_id=c.document_id,
-                document_name=c.document.filename,
+                document_name=c.document.filename if c.document else "unknown",
                 chunk_index=c.chunk_index,
                 page=c.page,
                 excerpt=excerpt,

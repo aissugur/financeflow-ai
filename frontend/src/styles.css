@@ -966,11 +966,11 @@ code {
 .topbar.show { opacity: 1; transform: none; pointer-events: auto; }
 .topbar-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-family: var(--font-display); }
 .topbar-nav { display: flex; gap: 22px; }
-.topbar-nav a {
+.topbar-nav a, .topbar-nav button {
   font-size: 13.5px; color: var(--text-dim); text-decoration: none; cursor: pointer;
-  background: none; border: none; font-family: inherit; transition: color 0.18s var(--ease);
+  background: none; border: none; padding: 0; font-family: inherit; transition: color 0.18s var(--ease);
 }
-.topbar-nav a:hover { color: var(--text); }
+.topbar-nav a:hover, .topbar-nav button:hover { color: var(--text); }
 
 /* Mono numbered section eyebrows */
 .eyebrow-mono {
@@ -1327,6 +1327,8 @@ code {
   gap: 28px;
   padding: clamp(28px, 5vw, 56px);
   color: #eaf1fb;
+  user-select: none;          /* decorative panel — no text selection on click */
+  -webkit-user-select: none;
   background:
     radial-gradient(600px 320px at 80% -10%, rgba(59, 130, 246, 0.35), transparent 60%),
     var(--accent-grad-hero);
@@ -1388,6 +1390,8 @@ code {
   transition: border-color var(--dur-base) var(--ease), background var(--dur-base) var(--ease), color var(--dur-base) var(--ease);
 }
 .auth-demo-link:hover { border-color: var(--border-strong); background: var(--surface-2); color: var(--text); }
+.auth-demo-link:disabled { opacity: 0.6; cursor: not-allowed; }
+.auth-google { display: flex; justify-content: center; margin-top: 14px; min-height: 40px; }
 .auth-switch { margin: 18px 0 0; text-align: center; font-size: 13.5px; color: var(--text-faint); }
 .auth-switch button { border: none; background: none; padding: 0; cursor: pointer; font: inherit; font-weight: 600; color: var(--accent); }
 .auth-switch button:hover { text-decoration: underline; }

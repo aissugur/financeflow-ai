@@ -112,3 +112,7 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserOut
+
+
+class GoogleLoginRequest(BaseModel):
+    credential: str  # the Google Identity Services ID token (a signed JWT)

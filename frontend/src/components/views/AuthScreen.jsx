@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   IconCheck,
   IconEye,
@@ -12,10 +12,63 @@ import { ErrorState } from "../ui/States";
 
 const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Renders the official Google Identity Services button when a client id is set;
+// on success it hands the Google ID token to onCredential. Hidden otherwise.
+function GoogleButton({ clientId, onCredential }) {
+  const ref = useRef(null);
+  const cbRef = useRef(onCredential);
+  cbRef.current = onCredential;
+
+  useEffect(() => {
+    if (!clientId) return undefined;
+    let cancelled = false;
+    function render() {
+      const gid = window.google?.accounts?.id;
+      if (cancelled || !gid || !ref.current) return;
+      gid.initialize({
+        client_id: clientId,
+        callback: (resp) => cbRef.current?.(resp.credential),
+      });
+      ref.current.innerHTML = "";
+      gid.renderButton(ref.current, {
+        type: "standard",
+        theme: "outline",
+        size: "large",
+        text: "continue_with",
+        width: 320,
+      });
+    }
+    if (window.google?.accounts?.id) {
+      render();
+      return () => {
+        cancelled = true;
+      };
+    }
+    let script = document.getElementById("gis-script");
+    if (!script) {
+      script = document.createElement("script");
+      script.id = "gis-script";
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      document.body.appendChild(script);
+    }
+    script.addEventListener("load", render);
+    return () => {
+      cancelled = true;
+      script.removeEventListener("load", render);
+    };
+  }, [clientId]);
+
+  if (!clientId) return null;
+  return <div className="auth-google" ref={ref} />;
+}
+
 export default function AuthScreen({
   onSignIn,
   onSignUp,
+  onGoogle,
   onDemo,
+  googleClientId,
   loading = false,
   serverError = "",
 }) {
@@ -240,11 +293,19 @@ export default function AuthScreen({
             </Button>
           </form>
 
+          <GoogleButton clientId={googleClientId} onCredential={onGoogle} />
+
           <div className="auth-divider">
             <span>or</span>
           </div>
-          <button type="button" className="auth-demo-link" onClick={onDemo}>
-            Continue with the demo →
+          <button
+            type="button"
+            className="auth-demo-link"
+            onClick={onDemo}
+            disabled={loading}
+            aria-busy={loading}
+          >
+            {loading ? "Starting demo…" : "Continue with the demo →"}
           </button>
 
           <p className="auth-switch">

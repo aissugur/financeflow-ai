@@ -1,7 +1,8 @@
 // Thin API client. All requests go through the Vite proxy at /api -> backend.
-// A JWT access token (from login/register) is kept in localStorage and sent as
-// `Authorization: Bearer <token>`; a 401 clears it and notifies the app so it
-// can drop back to the login screen.
+// A JWT access token (from login/register/google) is kept in localStorage and
+// sent as `Authorization: Bearer <token>`. A 401 on an AUTHENTICATED request
+// (one that carried a token) clears it and notifies the app with a reason; a 401
+// on a login attempt (no token) just throws so the form shows the error inline.
 const BASE = "/api";
 const TOKEN_KEY = "ff_token";
 
@@ -16,10 +17,10 @@ export function setOnUnauthorized(fn) {
   onUnauthorized = fn;
 }
 
-async function handle(res) {
-  if (res.status === 401) {
+async function handle(res, hadToken) {
+  if (res.status === 401 && hadToken) {
     tokenStore.clear();
-    onUnauthorized?.();
+    onUnauthorized?.("Your session expired — please sign in again.");
   }
   if (!res.ok) {
     let detail = res.statusText;
@@ -43,21 +44,22 @@ function request(path, { method = "GET", body, json } = {}) {
     headers["Content-Type"] = "application/json";
     payload = JSON.stringify(json);
   }
-  return fetch(`${BASE}${path}`, { method, headers, body: payload }).then(handle);
+  return fetch(`${BASE}${path}`, { method, headers, body: payload }).then((res) =>
+    handle(res, !!token)
+  );
 }
+
+const storeToken = (r) => {
+  tokenStore.set(r.access_token);
+  return r;
+};
 
 export const api = {
   // ---- Auth ----
-  register: (creds) =>
-    request("/auth/register", { method: "POST", json: creds }).then((r) => {
-      tokenStore.set(r.access_token);
-      return r;
-    }),
-  login: (creds) =>
-    request("/auth/login", { method: "POST", json: creds }).then((r) => {
-      tokenStore.set(r.access_token);
-      return r;
-    }),
+  register: (creds) => request("/auth/register", { method: "POST", json: creds }).then(storeToken),
+  login: (creds) => request("/auth/login", { method: "POST", json: creds }).then(storeToken),
+  googleLogin: (credential) =>
+    request("/auth/google", { method: "POST", json: { credential } }).then(storeToken),
   me: () => request("/auth/me"),
   logout: () => tokenStore.clear(),
 

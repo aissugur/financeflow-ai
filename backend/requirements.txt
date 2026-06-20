@@ -16,6 +16,9 @@ passlib[bcrypt]==1.7.4
 bcrypt==4.2.0          # pinned so passlib 1.7.4 doesn't emit a version-read warning
 PyJWT==2.9.0
 email-validator==2.2.0  # enables pydantic EmailStr
+# Optional "Continue with Google" — verifies the Google ID token server-side.
+google-auth==2.35.0
+requests==2.32.3
 
 # Optional LLM providers (the app works WITHOUT these installed/configured).
 # Install only if you want LLM-synthesized answers:

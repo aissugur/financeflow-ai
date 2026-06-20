@@ -36,7 +36,12 @@ def verify_password(password: str, password_hash: Optional[str]) -> bool:
 def create_access_token(subject: str, expires_minutes: Optional[int] = None) -> str:
     minutes = expires_minutes or config.ACCESS_TOKEN_EXPIRE_MINUTES
     now = datetime.now(timezone.utc)
-    payload = {"sub": subject, "iat": now, "exp": now + timedelta(minutes=minutes)}
+    payload = {
+        "sub": subject,
+        "type": "access",  # so a future token kind can't be replayed as an access token
+        "iat": now,
+        "exp": now + timedelta(minutes=minutes),
+    }
     return jwt.encode(payload, config.AUTH_SECRET_KEY, algorithm=config.AUTH_ALGORITHM)
 
 

@@ -4,6 +4,7 @@ Everything has a safe default so the app runs with zero setup.
 """
 import logging
 import os
+import secrets
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -73,20 +74,29 @@ ABSTAIN_MESSAGE = "Not enough information in the uploaded document."
 # --------------------------------------------------------------------------- #
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development").strip().lower()
 
-# AUTH_SECRET_KEY signs the JWTs. In production it MUST be supplied via the env;
-# the fixed dev default is convenient (tokens survive a restart) but FORGEABLE.
-_DEV_SECRET = "dev-insecure-change-me-please-0123456789abcdef"
+# AUTH_SECRET_KEY signs the JWTs. It MUST come from the env for any real deploy.
+# When unset we NEVER fall back to a shared constant (that would let anyone forge
+# tokens): in production we hard-fail, and in dev we mint a random EPHEMERAL key
+# (tokens just reset on restart). So a default deploy can't run on a public secret.
 AUTH_SECRET_KEY = os.getenv("AUTH_SECRET_KEY", "").strip()
 if not AUTH_SECRET_KEY:
     if ENVIRONMENT == "production":
-        raise RuntimeError("AUTH_SECRET_KEY must be set when ENVIRONMENT=production.")
-    AUTH_SECRET_KEY = _DEV_SECRET
+        raise RuntimeError(
+            "AUTH_SECRET_KEY must be set when ENVIRONMENT=production "
+            "(generate one with: python -c \"import secrets;print(secrets.token_urlsafe(64))\")."
+        )
+    AUTH_SECRET_KEY = secrets.token_urlsafe(64)  # random per-process; NOT a constant
     logging.getLogger(__name__).warning(
-        "AUTH_SECRET_KEY is unset — using an insecure dev default. "
-        "Set AUTH_SECRET_KEY for any real deployment."
+        "AUTH_SECRET_KEY is unset — using a random ephemeral key (sessions reset on "
+        "restart). Set AUTH_SECRET_KEY for stable, secure sessions."
     )
 
 AUTH_ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", str(60 * 24)))
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", str(60 * 12)))
 PASSWORD_MIN_LENGTH = int(os.getenv("PASSWORD_MIN_LENGTH", "8"))
 PASSWORD_MAX_LENGTH = int(os.getenv("PASSWORD_MAX_LENGTH", "72"))  # bcrypt's input cap
+
+# Optional "Continue with Google" sign-in. Set GOOGLE_CLIENT_ID to the public
+# OAuth Web client id; unset = the Google button is hidden and /auth/google 503s.
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "").strip()
+GOOGLE_ENABLED = bool(GOOGLE_CLIENT_ID)

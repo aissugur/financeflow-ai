@@ -14,6 +14,12 @@ const HEADINGS = {
   evaluation: { title: "Evaluation", sub: "How well the assistant stays grounded." },
 };
 
+function randHex(bytes) {
+  const a = new Uint8Array(bytes);
+  crypto.getRandomValues(a);
+  return Array.from(a, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 export default function App() {
   const [view, setView] = useState("overview");
   const [documents, setDocuments] = useState([]);
@@ -36,16 +42,27 @@ export default function App() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Validate any stored token on first load; a 401 anywhere logs us out.
+  // Mount: load public health (so the auth screen knows if Google is enabled) and
+  // validate any stored token. A 401 later surfaces a friendly expiry message.
   useEffect(() => {
-    setOnUnauthorized(() => setUser(null));
+    setOnUnauthorized((msg) => {
+      setAuthError(msg || "");
+      setUser(null);
+    });
+    api
+      .health()
+      .then((h) => {
+        setHealth(h);
+        setOnline(true);
+      })
+      .catch(() => setOnline(false));
     if (!tokenStore.get()) {
       setAuthReady(true);
       return;
     }
     api
       .me()
-      .then((u) => setUser(u))
+      .then(setUser)
       .catch(() => {})
       .finally(() => setAuthReady(true));
   }, []);
@@ -63,17 +80,10 @@ export default function App() {
     }
   }, []);
 
-  // Load documents + health only once we're authenticated.
+  // Load documents once authenticated.
   useEffect(() => {
     if (!user) return;
     reload();
-    api
-      .health()
-      .then((h) => {
-        setHealth(h);
-        setOnline(true);
-      })
-      .catch(() => setOnline(false));
   }, [reload, user]);
 
   async function handleAuth(fn, creds) {
@@ -89,14 +99,15 @@ export default function App() {
     }
   }
 
-  // Guest path: create a throwaway account so the demo + uploads just work.
-  // Note: a real (not special-use like .local/.test) TLD is required — EmailStr
-  // rejects reserved TLDs.
+  function handleGoogle(credential) {
+    return handleAuth(() => api.googleLogin(credential));
+  }
+
+  // Guest path: a throwaway account with CSPRNG creds (no predictable secrets).
   async function continueAsGuest() {
-    const rand = Math.random().toString(36).slice(2, 10);
     const res = await api.register({
-      email: `guest_${Date.now()}_${rand}@financeflow-guest.com`,
-      password: `guest_${rand}${rand}`,
+      email: `guest_${randHex(8)}@financeflow-guest.com`,
+      password: randHex(24),
     });
     setUser(res.user);
   }
@@ -143,8 +154,10 @@ export default function App() {
       <AuthScreen
         loading={authBusy}
         serverError={authError}
+        googleClientId={health?.google_client_id}
         onSignIn={(c) => handleAuth(api.login, c)}
         onSignUp={(c) => handleAuth(api.register, c)}
+        onGoogle={handleGoogle}
         onDemo={onDemo}
       />
     );
@@ -177,9 +190,9 @@ export default function App() {
             FinanceFlow AI
           </span>
           <nav className="topbar-nav">
-            <a onClick={() => setView("overview")}>Overview</a>
-            <a onClick={() => setView("ask")}>Ask</a>
-            <a onClick={() => setView("evaluation")}>Evaluation</a>
+            <button type="button" onClick={() => setView("overview")}>Overview</button>
+            <button type="button" onClick={() => setView("ask")}>Ask</button>
+            <button type="button" onClick={() => setView("evaluation")}>Evaluation</button>
           </nav>
           <Button variant="primary" size="sm" loading={seeding} onClick={onTryDemo}>
             Try demo

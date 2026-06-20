@@ -72,10 +72,60 @@ def test_invalid_token_is_rejected(anon_client):
     assert anon_client.get("/documents").status_code == 401
 
 
-def test_public_endpoints_stay_open(anon_client):
+def test_only_health_is_public(anon_client):
     assert anon_client.get("/health").status_code == 200
-    assert anon_client.post("/demo/seed").status_code == 200
-    assert anon_client.post("/evaluate").status_code == 200
+    # demo/seed and evaluate now require auth (resource-amplification guard).
+    assert anon_client.post("/demo/seed").status_code == 401
+    assert anon_client.post("/evaluate").status_code == 401
+
+
+def test_health_exposes_google_client_id(anon_client):
+    body = anon_client.get("/health").json()
+    assert "google_client_id" in body
+    assert body["google_client_id"] is None  # unset in tests -> Google off
+
+
+def test_google_login_disabled_returns_503(anon_client):
+    assert anon_client.post("/auth/google", json={"credential": "x"}).status_code == 503
+
+
+def test_google_login_creates_user(anon_client, monkeypatch):
+    from app import config
+
+    monkeypatch.setattr(config, "GOOGLE_ENABLED", True)
+    monkeypatch.setattr(config, "GOOGLE_CLIENT_ID", "test-client-id")
+    import google.oauth2.id_token as gid
+
+    monkeypatch.setattr(
+        gid,
+        "verify_oauth2_token",
+        lambda *a, **k: {
+            "iss": "accounts.google.com",
+            "email": "google.user@example.com",
+            "email_verified": True,
+        },
+    )
+    res = anon_client.post("/auth/google", json={"credential": "valid-id-token"})
+    assert res.status_code == 200
+    body = res.json()
+    assert body["access_token"]
+    assert body["user"]["email"] == "google.user@example.com"
+
+
+def test_history_is_isolated_per_user(client, second_client):
+    client.post("/demo/seed")
+    docs = client.get("/documents").json()
+    did = next(d["id"] for d in docs if d["filename"] == "sample_invoice.txt")
+    client.post("/ask", json={"document_id": did, "question": "What is the total amount due?"})
+    second_client.post("/ask", json={"document_id": did, "question": "Bob private question?"})
+
+    a_hist = client.get("/history").json()
+    assert any("total amount due" in h["question"].lower() for h in a_hist)
+    assert all("bob private question" not in h["question"].lower() for h in a_hist)
+
+    b_hist = second_client.get("/history").json()
+    assert any("bob private question" in h["question"].lower() for h in b_hist)
+    assert all("total amount due" not in h["question"].lower() for h in b_hist)
 
 
 def test_documents_are_isolated_per_user(client, second_client):

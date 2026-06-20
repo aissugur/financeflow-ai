@@ -11,9 +11,16 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
+from . import config
 from .database import get_db
 from .models import User
-from .schemas import LoginRequest, RegisterRequest, TokenResponse, UserOut
+from .schemas import (
+    GoogleLoginRequest,
+    LoginRequest,
+    RegisterRequest,
+    TokenResponse,
+    UserOut,
+)
 from .security import create_access_token, decode_token, hash_password, verify_password
 
 logger = logging.getLogger(__name__)
@@ -46,6 +53,8 @@ def get_current_user(
         user_id = int(payload["sub"])
     except (jwt.PyJWTError, KeyError, ValueError, TypeError):
         raise _CREDENTIALS_EXC
+    if payload.get("type") != "access":
+        raise _CREDENTIALS_EXC
     user = db.get(User, user_id)
     if user is None:
         raise _CREDENTIALS_EXC
@@ -72,6 +81,38 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
     # One generic message + a dummy-hash compare on miss -> no user enumeration.
     if not verify_password(req.password, user.password_hash if user else None):
         raise HTTPException(status_code=401, detail="Incorrect email or password.")
+    return TokenResponse(access_token=create_access_token(str(user.id)), user=user)
+
+
+@router.post("/google", response_model=TokenResponse, summary="Sign in with Google")
+def google_login(req: GoogleLoginRequest, db: Session = Depends(get_db)):
+    if not config.GOOGLE_ENABLED:
+        raise HTTPException(status_code=503, detail="Google sign-in is not configured.")
+    try:
+        from google.auth.transport import requests as google_requests  # lazy import
+        from google.oauth2 import id_token as google_id_token
+
+        # Verifies the signature, expiry, AND aud == our client id.
+        info = google_id_token.verify_oauth2_token(
+            req.credential, google_requests.Request(), config.GOOGLE_CLIENT_ID
+        )
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid Google credential.")
+
+    if info.get("iss") not in {"accounts.google.com", "https://accounts.google.com"}:
+        raise HTTPException(status_code=401, detail="Invalid Google token issuer.")
+    if not info.get("email_verified") or not info.get("email"):
+        raise HTTPException(status_code=401, detail="Google account email is not verified.")
+
+    # Get-or-create by verified email (links to an existing password account too).
+    email = _normalize_email(info["email"])
+    user = db.query(User).filter(User.email == email).first()
+    if user is None:
+        user = User(email=email, password_hash=None)  # OAuth-only: no password
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        logger.info("Registered Google user %d (%s)", user.id, user.email)
     return TokenResponse(access_token=create_access_token(str(user.id)), user=user)
 
 

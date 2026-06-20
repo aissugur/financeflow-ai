@@ -63,6 +63,10 @@ class QA(Base):
     document_id = Column(
         Integer, ForeignKey("documents.id", ondelete="CASCADE"), index=True
     )
+    # The asker — so history is scoped per user even over shared demo documents.
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True
+    )
     question = Column(Text, nullable=False)
     answer = Column(Text, nullable=False)
     abstained = Column(Integer, nullable=False, default=0)  # 0/1 boolean
@@ -77,7 +81,8 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, nullable=False, unique=True, index=True)
-    password_hash = Column(String, nullable=False)
+    # Nullable: Google-only accounts have no password.
+    password_hash = Column(String, nullable=True)
     created_at = Column(DateTime, default=_utcnow)
 
     documents = relationship(

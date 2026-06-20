@@ -1,7 +1,9 @@
 """Shared pytest fixtures.
 
-The API tests run against the real FastAPI app but with the database swapped
-for a throwaway temp-file SQLite, so tests never touch the dev database.
+API tests run against the real FastAPI app but with the database swapped for a
+throwaway temp-file SQLite, and AUTHENTICATED by default: the `client` fixture
+registers a user and presets the Authorization header, so the existing API tests
+exercise the now-protected endpoints unchanged.
 """
 import os
 import tempfile
@@ -17,8 +19,9 @@ from app.main import app
 
 
 @pytest.fixture()
-def client():
-    """A TestClient backed by an isolated temp SQLite database."""
+def _engine():
+    """One isolated temp-SQLite engine + get_db override, shared by every client
+    in a test (so two users hit the SAME database for isolation checks)."""
     fd, path = tempfile.mkstemp(suffix=".db")
     os.close(fd)
     engine = create_engine(
@@ -36,11 +39,42 @@ def client():
 
     app.dependency_overrides[get_db] = override_get_db
     try:
-        yield TestClient(app)
+        yield engine
     finally:
         app.dependency_overrides.clear()
         engine.dispose()
         os.unlink(path)
+
+
+def _register(c, email="user@example.com", password="password123") -> str:
+    res = c.post("/auth/register", json={"email": email, "password": password})
+    assert res.status_code == 201, res.text
+    return res.json()["access_token"]
+
+
+@pytest.fixture()
+def anon_client(_engine):
+    """Unauthenticated client — for auth and 401 tests."""
+    with TestClient(app) as c:
+        yield c
+
+
+@pytest.fixture()
+def client(_engine):
+    """Authenticated client (default user). Existing API tests use this, so every
+    request carries a Bearer token with zero per-test changes."""
+    with TestClient(app) as c:
+        c.headers.update({"Authorization": f"Bearer {_register(c)}"})
+        yield c
+
+
+@pytest.fixture()
+def second_client(_engine):
+    """A DIFFERENT user on the SAME engine — for cross-user isolation tests."""
+    with TestClient(app) as c:
+        token = _register(c, email="other@example.com")
+        c.headers.update({"Authorization": f"Bearer {token}"})
+        yield c
 
 
 def make_chunk(text, *, chunk_index=0, page=None, filename="doc.txt", document_id=1):

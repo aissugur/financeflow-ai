@@ -2,6 +2,7 @@
 
 Everything has a safe default so the app runs with zero setup.
 """
+import logging
 import os
 from pathlib import Path
 
@@ -66,3 +67,26 @@ ALLOWED_EXTENSIONS = {".pdf", ".txt"}
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
 
 ABSTAIN_MESSAGE = "Not enough information in the uploaded document."
+
+# --------------------------------------------------------------------------- #
+# Authentication (JWT access tokens + bcrypt password hashing)
+# --------------------------------------------------------------------------- #
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development").strip().lower()
+
+# AUTH_SECRET_KEY signs the JWTs. In production it MUST be supplied via the env;
+# the fixed dev default is convenient (tokens survive a restart) but FORGEABLE.
+_DEV_SECRET = "dev-insecure-change-me-please-0123456789abcdef"
+AUTH_SECRET_KEY = os.getenv("AUTH_SECRET_KEY", "").strip()
+if not AUTH_SECRET_KEY:
+    if ENVIRONMENT == "production":
+        raise RuntimeError("AUTH_SECRET_KEY must be set when ENVIRONMENT=production.")
+    AUTH_SECRET_KEY = _DEV_SECRET
+    logging.getLogger(__name__).warning(
+        "AUTH_SECRET_KEY is unset — using an insecure dev default. "
+        "Set AUTH_SECRET_KEY for any real deployment."
+    )
+
+AUTH_ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", str(60 * 24)))
+PASSWORD_MIN_LENGTH = int(os.getenv("PASSWORD_MIN_LENGTH", "8"))
+PASSWORD_MAX_LENGTH = int(os.getenv("PASSWORD_MAX_LENGTH", "72"))  # bcrypt's input cap

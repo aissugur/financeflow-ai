@@ -11,6 +11,12 @@ python-dotenv==1.0.1
 # enables the reranking stage. Small CPU model (~3 MB), no GPU needed.
 flashrank==0.2.10
 
+# Authentication: bcrypt password hashing + JWT access tokens.
+passlib[bcrypt]==1.7.4
+bcrypt==4.2.0          # pinned so passlib 1.7.4 doesn't emit a version-read warning
+PyJWT==2.9.0
+email-validator==2.2.0  # enables pydantic EmailStr
+
 # Optional LLM providers (the app works WITHOUT these installed/configured).
 # Install only if you want LLM-synthesized answers:
 #   pip install openai anthropic

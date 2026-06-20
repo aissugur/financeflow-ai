@@ -8,16 +8,18 @@ from typing import List, Optional
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from starlette.requests import Request
 
 from . import config
 from .answering import answer_question
+from .auth import get_current_user, router as auth_router
 from .database import Base, engine, get_db
 from .evaluation import ensure_sample_documents, run_evaluation
 from .ingest import ingest_file
 from .logging_config import setup_logging
-from .models import QA, Chunk, Document
+from .models import QA, Chunk, Document, User
 from .schemas import (
     AskRequest,
     AskResponse,
@@ -63,6 +65,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Auth endpoints: /auth/register, /auth/login, /auth/me.
+app.include_router(auth_router)
+
 
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
@@ -73,6 +78,23 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
         status_code=500,
         content={"detail": "Internal server error. Please try again."},
     )
+
+
+# --------------------------------------------------------------------------- #
+# Per-user document scoping
+# --------------------------------------------------------------------------- #
+def _scoped(query, user: User):
+    """Restrict a Document query to the user's own docs plus shared demo docs."""
+    return query.filter(or_(Document.owner_id == user.id, Document.owner_id.is_(None)))
+
+
+def _owned_document(db: Session, user: User, document_id: int) -> Document:
+    """Return a document the user may READ (their own, or a shared demo doc),
+    else 404 — so the existence of another user's document id is never leaked."""
+    document = db.get(Document, document_id)
+    if document is None or (document.owner_id is not None and document.owner_id != user.id):
+        raise HTTPException(status_code=404, detail="Document not found.")
+    return document
 
 
 # --------------------------------------------------------------------------- #
@@ -108,6 +130,7 @@ def health():
 async def upload_document(
     file: UploadFile = File(..., description="A PDF or TXT file, up to 10 MB."),
     db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
     original_name = (file.filename or "").strip()
     if not original_name:
@@ -146,7 +169,7 @@ async def upload_document(
     try:
         tmp.write(raw)
         tmp.close()
-        document = ingest_file(db, Path(tmp.name), original_name, file_type)
+        document = ingest_file(db, Path(tmp.name), original_name, file_type, user_id=user.id)
     finally:
         Path(tmp.name).unlink(missing_ok=True)
     return document
@@ -158,8 +181,11 @@ async def upload_document(
     tags=["Documents"],
     summary="List all documents",
 )
-def list_documents(db: Session = Depends(get_db)):
-    return db.query(Document).order_by(Document.created_at.desc()).all()
+def list_documents(
+    db: Session = Depends(get_db), user: User = Depends(get_current_user)
+):
+    query = _scoped(db.query(Document), user)
+    return query.order_by(Document.created_at.desc()).all()
 
 
 @app.get(
@@ -168,11 +194,12 @@ def list_documents(db: Session = Depends(get_db)):
     tags=["Documents"],
     summary="Get one document's metadata",
 )
-def get_document(document_id: int, db: Session = Depends(get_db)):
-    document = db.get(Document, document_id)
-    if not document:
-        raise HTTPException(status_code=404, detail="Document not found.")
-    return document
+def get_document(
+    document_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    return _owned_document(db, user, document_id)
 
 
 @app.delete(
@@ -182,9 +209,14 @@ def get_document(document_id: int, db: Session = Depends(get_db)):
     summary="Delete a document",
     description="Deletes the document and cascades to its chunks and Q&A history.",
 )
-def delete_document(document_id: int, db: Session = Depends(get_db)):
+def delete_document(
+    document_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    # Delete is owner-only — a user can't remove a shared demo document.
     document = db.get(Document, document_id)
-    if not document:
+    if document is None or document.owner_id != user.id:
         raise HTTPException(status_code=404, detail="Document not found.")
     db.delete(document)  # cascades to chunks + qa history
     db.commit()
@@ -207,14 +239,16 @@ def delete_document(document_id: int, db: Session = Depends(get_db)):
         "'Not enough information in the uploaded document.'"
     ),
 )
-def ask(req: AskRequest, db: Session = Depends(get_db)):
+def ask(
+    req: AskRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
     question = req.question.strip()
     if not question:
         raise HTTPException(status_code=400, detail="Question must not be empty.")
 
-    document = db.get(Document, req.document_id)
-    if not document:
-        raise HTTPException(status_code=404, detail="Document not found.")
+    document = _owned_document(db, user, req.document_id)
     if document.status != "processed":
         raise HTTPException(
             status_code=400,
@@ -251,9 +285,15 @@ def ask(req: AskRequest, db: Session = Depends(get_db)):
     tags=["Q&A"],
     summary="List past questions and answers",
 )
-def history(document_id: Optional[int] = None, db: Session = Depends(get_db)):
-    query = db.query(QA).order_by(QA.created_at.desc())
+def history(
+    document_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    query = _scoped(db.query(QA).join(Document, QA.document_id == Document.id), user)
+    query = query.order_by(QA.created_at.desc())
     if document_id is not None:
+        _owned_document(db, user, document_id)  # 404 if not accessible
         query = query.filter(QA.document_id == document_id)
     rows = query.limit(100).all()
 

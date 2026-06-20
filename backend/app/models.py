@@ -28,7 +28,12 @@ class Document(Base):
     error = Column(Text, nullable=True)
     num_chunks = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime, default=_utcnow)
+    # Owner of the document. NULL = a shared demo/eval document (visible to all).
+    owner_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True
+    )
 
+    owner = relationship("User", back_populates="documents")
     chunks = relationship(
         "Chunk", back_populates="document", cascade="all, delete-orphan"
     )
@@ -65,3 +70,16 @@ class QA(Base):
     created_at = Column(DateTime, default=_utcnow)
 
     document = relationship("Document", back_populates="questions")
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, nullable=False, unique=True, index=True)
+    password_hash = Column(String, nullable=False)
+    created_at = Column(DateTime, default=_utcnow)
+
+    documents = relationship(
+        "Document", back_populates="owner", cascade="all, delete-orphan"
+    )

@@ -46,6 +46,9 @@ build/
 backend/_debug.py
 backend/_check.py
 _scratch*
+# local HF-deploy helper (handles your token) and the token file it consumes
+deploy_hf.py
+hf_token*.txt
 
 # ---- Unrelated files that happen to live in this folder (HFSimulator project) ----
 # These are NOT part of FinanceFlow AI.

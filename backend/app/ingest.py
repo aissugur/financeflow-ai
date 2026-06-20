@@ -5,6 +5,7 @@ single, well-tested path for turning a file into stored chunks.
 """
 import logging
 from pathlib import Path
+from typing import Optional
 
 from sqlalchemy.orm import Session
 
@@ -15,14 +16,23 @@ from .parsing import extract_pages
 logger = logging.getLogger(__name__)
 
 
-def ingest_file(db: Session, stored_path: Path, display_name: str, file_type: str) -> Document:
+def ingest_file(
+    db: Session,
+    stored_path: Path,
+    display_name: str,
+    file_type: str,
+    user_id: Optional[int] = None,
+) -> Document:
     """Create a Document row, extract + chunk its text, and store chunks.
 
     Always commits a Document row. On parse failure the document is saved with
     status='failed' and an error message instead of raising, so the dashboard
-    can show the failure.
+    can show the failure. `user_id=None` leaves the document SHARED (demo/eval);
+    real uploads pass the owner's id.
     """
-    document = Document(filename=display_name, file_type=file_type, status="processed")
+    document = Document(
+        filename=display_name, file_type=file_type, status="processed", owner_id=user_id
+    )
     db.add(document)
     db.flush()  # assign document.id without committing yet
 

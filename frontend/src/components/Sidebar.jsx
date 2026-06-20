@@ -1,4 +1,4 @@
-import { IconAsk, IconEval, IconOverview, IconSpark } from "../lib/icons";
+import { IconAsk, IconEval, IconLogout, IconOverview, IconSpark } from "../lib/icons";
 
 const NAV = [
   { id: "overview", label: "Overview", Icon: IconOverview },
@@ -6,7 +6,7 @@ const NAV = [
   { id: "evaluation", label: "Evaluation", Icon: IconEval },
 ];
 
-export default function Sidebar({ view, setView, online, llmAvailable }) {
+export default function Sidebar({ view, setView, online, llmAvailable, userEmail, onLogout }) {
   const status = online
     ? `API online · ${llmAvailable ? "Thinking ready" : "Fast mode"}`
     : "API offline";
@@ -35,6 +35,15 @@ export default function Sidebar({ view, setView, online, llmAvailable }) {
           </button>
         ))}
       </nav>
+
+      {userEmail && (
+        <div className="sidebar-account brand-sub-hide">
+          <span className="acct-email" title={userEmail}>{userEmail}</span>
+          <button className="acct-logout" onClick={onLogout} aria-label="Log out" title="Log out">
+            <IconLogout size={15} />
+          </button>
+        </div>
+      )}
 
       <div className="sidebar-foot">
         <span

@@ -132,8 +132,8 @@ export default function AuthScreen({
             Answers you can <span className="clip-light">prove.</span>
           </h1>
           <p className="auth-brand-sub">
-            Source-grounded document Q&amp;A — every answer cites the exact line, and
-            it abstains when the evidence isn’t there.
+            Audit invoices, contracts, and payment notes — every answer cites the
+            exact source, and it abstains when evidence is missing.
           </p>
           <ul className="auth-feat">
             <li>
@@ -159,7 +159,7 @@ export default function AuthScreen({
             </li>
           </ul>
         </div>
-        <p className="auth-brand-foot">Source-backed document intelligence.</p>
+        <p className="auth-brand-foot">Evidence-backed finance document intelligence.</p>
       </aside>
 
       {/* ---- Form panel ---- */}

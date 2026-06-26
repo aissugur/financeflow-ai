@@ -98,15 +98,15 @@ export default function Overview({ documents, loading, reload, onTryDemo, seedin
       <section className="hero-stage">
         <div>
           <span className="hero-eyebrow">
-            <IconSpark size={14} /> Source-grounded answers
+            <IconSpark size={14} /> Audit-ready finance answers
           </span>
           <h1 className="hero-h1">
             Answers you can <span className="clip">prove.</span>
           </h1>
           <p className="hero-sub">
-            FinanceFlow reads your invoices, contracts, and payment notes and answers
-            questions <strong>only</strong> from what's in the document — with citations
-            you can verify. When the evidence isn't there, it says so instead of guessing.
+            FinanceFlow audits invoices, contracts, and payment notes for totals, due
+            dates, payment terms, late fees, and unsupported claims — with citations you
+            can verify. When the evidence isn't there, it says so instead of guessing.
           </p>
           <div className="hero-cta">
             <Button variant="primary" size="lg" loading={seeding} onClick={onTryDemo}>
@@ -325,7 +325,7 @@ export default function Overview({ documents, loading, reload, onTryDemo, seedin
           </span>
           FinanceFlow AI
         </span>
-        <span>Source-backed document intelligence.</span>
+        <span>Evidence-backed finance document intelligence.</span>
         <a href="https://github.com/aissugur/financeflow-ai" target="_blank" rel="noreferrer">
           GitHub ↗
         </a>

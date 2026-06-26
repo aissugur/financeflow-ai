@@ -1,26 +1,26 @@
 """Evidence-backed document audit.
 
 Runs a finance-specific checklist over a document and reports, per check, either
-the cited value the document supports or that the field is missing. It reuses the
-SAME retrieval + abstention gate as ``/ask`` (``answer_question``) to FIND
-candidate evidence, then applies a field-specific discriminator before calling a
-check "supported": the cited excerpt must actually contain one of the field's
-keywords (e.g. a "tax"/"vat" token for the tax check, a "due date"/"payment due"
-phrase for the due-date check). Without that second gate, the generic /ask
-coverage rule (any two query words overlapping anywhere) would mark a field
-"present" off incidental words like "Sales"/"Charged" — a false positive that
-would wrongly lower the audit's risk level. So a check passes only when the
-document genuinely supports the field, and the audit never invents a value.
+the cited value the document supports or that the field is missing. Two grounded
+detection strategies (neither invents a value):
 
-This is intentionally simple and deterministic: no new model, no LLM required.
+  * Structured fields (totals, due dates, terms, tax, invoice numbers, late fees,
+    overdue days) are detected by deterministic regex extractors over the document
+    chunks — precise, and finds a value even where the generic /ask retrieval gate
+    would abstain (e.g. a lone "Tax (8.25%) $183.98" line, the live bug this fixes).
+  * Fuzzy clauses (termination, liability, renewal, governing law, parties) have no
+    clean regex, so they are detected by scanning the chunks for the clause's
+    discriminator keywords and citing the surrounding text.
+
+Both paths are deterministic (no model, no retrieval gate). A check that finds
+nothing is an *unsupported* finding; a missing critical field drives the risk.
 """
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
-from .answering import _focused_span, answer_question
+from . import extractors
 from .models import Chunk
-from .retrieval import tokenize
 from .schemas import AuditMetrics, AuditResponse, Citation, Finding
 
 logger = logging.getLogger(__name__)
@@ -30,63 +30,47 @@ logger = logging.getLogger(__name__)
 class _Check:
     type: str  # finding type key (stable id for the UI)
     label: str  # human-readable field name (used in claims/summary)
-    query: str  # question used to retrieve candidate evidence via answer_question
+    query: str  # short description of what the check looks for
     severity: str  # severity to assign WHEN THE FIELD IS MISSING (low/medium/high)
-    keywords: Tuple[str, ...]  # ≥1 must appear in the cited excerpt to count as present
+    extractor: Optional[str] = None  # regex extractor key (structured fields)
+    keywords: Tuple[str, ...] = field(default_factory=tuple)  # discriminators (fuzzy clauses)
 
 
-# Checklists per audit type. `keywords` are the field's discriminators: distinctive
-# (often multi-word) phrases that genuinely indicate the field is present, so an
-# incidental overlap of generic query words can't pass the check. Matching is
-# case-insensitive substring on the cited excerpt.
+# Checklists per audit type. Structured fields set `extractor`; fuzzy clauses set
+# `keywords` (distinctive phrases whose presence indicates the clause).
 _CHECKLISTS = {
     "invoice": [
-        _Check("total_amount", "total amount due", "What is the total amount due?", "high",
-               ("total", "amount due", "balance due", "grand total", "amount payable")),
-        _Check("due_date", "due date", "What is the payment due date?", "high",
-               ("due date", "payment due", "due by", "due on", "pay by", "payable by")),
-        _Check("payment_terms", "payment terms", "What are the payment terms, e.g. net 30?", "medium",
-               ("net ", "payment term", "terms net", "due within", "payable within")),
-        _Check("invoice_number", "invoice number", "What is the invoice number?", "low",
-               ("invoice number", "invoice no", "invoice #", "inv-", "invoice id")),
-        _Check("late_fee", "late fee", "What is the late fee or penalty for overdue payment?", "low",
-               ("late fee", "late payment", "late charge", "overdue", "penalty", "per month", "per annum")),
-        _Check("tax", "tax / VAT", "What sales tax or VAT percentage is charged?", "low",
-               ("tax", "vat", "gst")),
+        _Check("total_amount", "total amount due", "total amount due", "high", extractor="total_amount"),
+        _Check("due_date", "due date", "payment due date", "high", extractor="due_date"),
+        _Check("payment_terms", "payment terms", "payment terms", "medium", extractor="payment_terms"),
+        _Check("invoice_number", "invoice number", "invoice number", "low", extractor="invoice_number"),
+        _Check("late_fee", "late fee", "late fee for overdue payment", "low", extractor="late_fee"),
+        _Check("tax", "tax / VAT", "sales tax or VAT", "low", extractor="tax"),
     ],
     "contract": [
-        _Check("payment_terms", "payment terms", "What are the payment terms?", "high",
-               ("net ", "payment term", "payable within", "due within", "paid within")),
-        _Check("termination", "termination clause", "What is the termination clause or notice period?", "medium",
-               ("terminat", "notice period", "days' notice", "days notice", "may cancel", "for cause")),
-        _Check("liability", "liability clause", "What is the liability, penalty, or indemnification clause?", "medium",
-               ("liabilit", "indemnif", "indemnit", "damages", "limitation of")),
-        _Check("renewal", "renewal terms", "Is there an automatic renewal or renewal term?", "medium",
-               ("renew", "auto-renew", "automatic renewal", "renewal term")),
-        _Check("governing_law", "governing law", "What is the governing law or jurisdiction?", "low",
-               ("governing law", "jurisdiction", "governed by", "laws of", "venue")),
-        _Check("late_fee", "late fee", "What interest or late fee applies to overdue amounts?", "low",
-               ("late fee", "late charge", "overdue", "per annum", "per month", "interest on")),
+        _Check("payment_terms", "payment terms", "payment terms", "high", extractor="payment_terms"),
+        _Check("termination", "termination clause", "termination clause or notice period", "medium",
+               keywords=("terminat", "notice period", "days' notice", "days notice", "may cancel", "for cause")),
+        _Check("liability", "liability clause", "liability or indemnification clause", "medium",
+               keywords=("liabilit", "indemnif", "indemnit", "limitation of")),
+        _Check("renewal", "renewal terms", "automatic renewal or renewal term", "medium",
+               keywords=("renew", "auto-renew", "automatic renewal", "renewal term")),
+        _Check("governing_law", "governing law", "governing law or jurisdiction", "low",
+               keywords=("governing law", "jurisdiction", "governed by", "laws of", "venue")),
+        _Check("late_fee", "late fee", "interest or late fee on overdue amounts", "low", extractor="late_fee"),
     ],
     "payment_note": [
-        _Check("amount", "payment amount", "What is the payment amount or outstanding balance?", "high",
-               ("amount", "balance", "outstanding", "total due", "owing")),
-        _Check("due_date", "due date", "What is the payment due date?", "high",
-               ("due date", "payment due", "due by", "due on", "pay by")),
-        _Check("overdue", "overdue status", "Is the payment overdue, and by how many days?", "medium",
-               ("overdue", "past due", "days late", "days overdue", "arrears")),
-        _Check("reference", "reference number", "What is the invoice or reference number?", "low",
-               ("reference", "ref ", "ref:", "ref.", "invoice no", "invoice number", "inv-")),
+        _Check("amount", "outstanding amount", "outstanding balance", "high", extractor="amount"),
+        _Check("due_date", "due date", "payment due date", "high", extractor="due_date"),
+        _Check("overdue", "overdue status", "days overdue", "medium", extractor="overdue"),
+        _Check("reference", "reference number", "invoice or reference number", "low", extractor="reference"),
     ],
     "general": [
-        _Check("total_amount", "amount", "What is the total amount or balance?", "medium",
-               ("total", "amount", "balance", "subtotal")),
-        _Check("date", "key date", "What is the due date or other key date?", "medium",
-               ("date", "deadline", "due")),
-        _Check("payment_terms", "payment terms", "What are the payment terms?", "low",
-               ("net ", "payment term", "terms")),
-        _Check("parties", "parties", "Who are the parties, vendor, or customer involved?", "low",
-               ("vendor", "customer", "client", "bill to", "sold to", "supplier", "between")),
+        _Check("total_amount", "amount", "total amount or balance", "medium", extractor="total_amount"),
+        _Check("date", "key date", "due date or key date", "medium", extractor="date"),
+        _Check("payment_terms", "payment terms", "payment terms", "low", extractor="payment_terms"),
+        _Check("parties", "parties", "parties, vendor, or customer", "low",
+               keywords=("vendor", "customer", "client", "bill to", "sold to", "supplier", "between")),
     ],
 }
 
@@ -95,63 +79,84 @@ def checklist_for(audit_type: str) -> List[_Check]:
     return _CHECKLISTS.get(audit_type) or _CHECKLISTS["general"]
 
 
-def _supporting_citation(
-    keywords: Tuple[str, ...], citations: List[Citation]
-) -> Optional[Citation]:
-    """The first cited excerpt that actually contains one of the field's
-    discriminators, or None — i.e. the field really appears in the evidence."""
-    for c in citations:
-        low = c.excerpt.lower()
-        if any(kw.strip() and kw in low for kw in keywords):
-            return c
+def _excerpt_around(text: str, pos: int, length: int, pad: Tuple[int, int] = (55, 95)) -> str:
+    """A readable, ellipsised window of `text` around [pos, pos+length)."""
+    s, e = max(0, pos - pad[0]), min(len(text), pos + length + pad[1])
+    return ("…" if s > 0 else "") + text[s:e].strip() + ("…" if e < len(text) else "")
+
+
+def _citation(chunk: Chunk, excerpt: str, match_text: str) -> Citation:
+    return Citation(
+        document_id=chunk.document_id,
+        document_name=chunk.document.filename if chunk.document else "unknown",
+        chunk_index=chunk.chunk_index,
+        page=chunk.page,
+        excerpt=excerpt,
+        score=1.0,  # exact match -> full confidence
+        match_text=match_text,
+    )
+
+
+def _citation_for_span(chunk: Chunk, span: str) -> Citation:
+    """Citation around a verbatim regex-matched span within a chunk."""
+    pos = chunk.text.lower().find(span.lower())
+    excerpt = span if pos < 0 else _excerpt_around(chunk.text, pos, len(span), pad=(50, 50))
+    return _citation(chunk, excerpt, span)
+
+
+def _find_clause(keywords: Tuple[str, ...], chunks: List[Chunk]):
+    """First (chunk, position, keyword_len) where a discriminator keyword appears."""
+    for c in chunks:
+        low = c.text.lower()
+        for kw in keywords:
+            k = kw.strip().lower()
+            if k:
+                pos = low.find(k)
+                if pos != -1:
+                    return c, pos, len(k)
     return None
 
 
-def _claim_span(keywords: Tuple[str, ...], excerpt: str, fallback: str) -> str:
-    """A verbatim window of the excerpt centered on the field's discriminator, so
-    the shown value is the field's region (not a dense overlap of generic words).
-    Nothing is generated."""
-    low = excerpt.lower()
-    hit = next((kw for kw in keywords if kw.strip() and kw in low), None)
-    span = _focused_span(set(tokenize(hit)), excerpt, window_words=14) if hit else None
-    if span and span[1].strip():
-        return span[1].strip()
-    return (fallback or excerpt).strip()
+def _supported(type_: str, claim: str, evidence: str, citation: Citation) -> Finding:
+    return Finding(type=type_, severity="low", claim=claim, evidence=evidence, citation=citation)
+
+
+def _missing(chk: _Check) -> Finding:
+    return Finding(
+        type=chk.type,
+        severity=chk.severity,
+        claim=f"No {chk.label} found in the document.",
+        evidence="",
+        citation=None,
+    )
 
 
 def run_audit(audit_type: str, document_name: str, chunks: List[Chunk]) -> AuditResponse:
-    """Run the checklist for ``audit_type`` over ``chunks`` and return the audit.
-
-    For each check we retrieve candidate evidence via ``answer_question`` and then
-    require the cited excerpt to contain the field's discriminator. Only then is
-    the finding SUPPORTED (with the cited value + citation); otherwise the field
-    is flagged unsupported (no citation) and takes the check's severity — a missing
-    critical field drives the risk level.
-    """
+    """Run the checklist for ``audit_type`` over ``chunks`` and return the audit."""
     findings: List[Finding] = []
+    chunk_texts = [c.text for c in chunks]
+
     for chk in checklist_for(audit_type):
-        answer, abstained, _mode, citations, _meta = answer_question(chk.query, chunks, "fast")
-        cite = None if abstained else _supporting_citation(chk.keywords, citations)
-        if cite is not None:
-            findings.append(
-                Finding(
-                    type=chk.type,
-                    severity="low",  # present and cited -> verified, lowest concern
-                    claim=_claim_span(chk.keywords, cite.excerpt, answer),
-                    evidence=cite.excerpt,
-                    citation=cite,
-                )
-            )
+        if chk.extractor:
+            # Structured field: deterministic regex over the document chunks.
+            hit = extractors.find_field(chk.extractor, chunk_texts)
+            if hit is not None:
+                idx, span, _answer = hit
+                cite = _citation_for_span(chunks[idx], span)
+                findings.append(_supported(chk.type, span, cite.excerpt, cite))
+            else:
+                findings.append(_missing(chk))
         else:
-            findings.append(
-                Finding(
-                    type=chk.type,
-                    severity=chk.severity,  # missing field -> risk by importance
-                    claim=f"No {chk.label} found in the document.",
-                    evidence="",
-                    citation=None,
-                )
-            )
+            # Fuzzy clause: scan the chunks for a discriminator keyword and cite
+            # the surrounding text (no retrieval gate, so no false-negative abstain).
+            found = _find_clause(chk.keywords, chunks)
+            if found is not None:
+                chunk, pos, klen = found
+                excerpt = _excerpt_around(chunk.text, pos, klen)
+                cite = _citation(chunk, excerpt, chunk.text[pos : pos + klen])
+                findings.append(_supported(chk.type, excerpt, excerpt, cite))
+            else:
+                findings.append(_missing(chk))
 
     supported = [f for f in findings if f.citation is not None]
     unsupported = [f for f in findings if f.citation is None]

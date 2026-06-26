@@ -13,7 +13,7 @@ import logging
 import time
 from typing import List, Optional, Set, Tuple
 
-from . import config, embeddings, llm, reranking
+from . import config, embeddings, extractors, llm, reranking
 from .models import Chunk
 from .retrieval import ScoredChunk, hybrid_rank, rank_chunks, tokenize
 from .schemas import Citation
@@ -286,7 +286,11 @@ def answer_question(question: str, chunks: List[Chunk], mode: str = "fast"):
         # No key / call failed -> transparently fall back to the fast engine.
         logger.info("Thinking unavailable; using fast (extractive) for: %s", question)
 
-    answer = _focused_answer(question, [s.chunk for s in relevant])
+    # Prefer a crisp, grounded direct answer for common finance questions
+    # ("The total amount due is $2,413.98."), extracted verbatim from the retrieved
+    # chunks; fall back to the focused span when no pattern matches.
+    direct = extractors.extract_direct_answer(question, [s.chunk.text for s in relevant])
+    answer = direct or _focused_answer(question, [s.chunk for s in relevant])
     metadata = _build_metadata(
         question_type=question_type,
         evidence_status="supported",

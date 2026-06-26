@@ -268,6 +268,47 @@ export default function Ask({ documents, demoSignal, llmAvailable, onDemoConsume
               <p className={`answer-body ${result.abstained ? "dim" : ""}`}>
                 {result.answer}
               </p>
+              {result.metadata && (
+                <dl className="ask-meta">
+                  <div className="ask-meta-row">
+                    <dt className="ask-meta-k">Question type</dt>
+                    <dd className="ask-meta-v">
+                      {typeof result.metadata.question_type === "string"
+                        ? result.metadata.question_type.replace(/_/g, " ")
+                        : "—"}
+                    </dd>
+                  </div>
+                  <div className="ask-meta-row">
+                    <dt className="ask-meta-k">Evidence</dt>
+                    <dd className="ask-meta-v">
+                      {result.metadata.evidence_status ?? "—"}
+                    </dd>
+                  </div>
+                  <div className="ask-meta-row">
+                    <dt className="ask-meta-k">Confidence</dt>
+                    <dd className="ask-meta-v">
+                      {typeof result.metadata.confidence === "number"
+                        ? `${Math.round(result.metadata.confidence * 100)}%`
+                        : "—"}
+                    </dd>
+                  </div>
+                  <div className="ask-meta-row">
+                    <dt className="ask-meta-k">Retrieved / cited</dt>
+                    <dd className="ask-meta-v">
+                      {result.metadata.retrieved_chunks ?? "—"} /{" "}
+                      {result.metadata.cited_chunks ?? "—"}
+                    </dd>
+                  </div>
+                  <div className="ask-meta-row">
+                    <dt className="ask-meta-k">Latency</dt>
+                    <dd className="ask-meta-v">
+                      {typeof result.metadata.latency_ms === "number"
+                        ? `${result.metadata.latency_ms} ms`
+                        : "—"}
+                    </dd>
+                  </div>
+                </dl>
+              )}
               {result.requestedMode === "thinking" && result.mode === "fast" && (
                 <p className="seg-note" style={{ margin: "10px 0 0" }}>
                   Thinking was unavailable for this request — answered with Fast.

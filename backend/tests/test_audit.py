@@ -19,7 +19,7 @@ _INVOICE = (
 # date. The audit must NOT mark those fields supported off incidental overlaps.
 _TRAP_INVOICE = (
     b"Invoice INV-99. Sales representative John handled this order. "
-    b"Total Amount Due 5000 dollars. Charged to account 12 on file. "
+    b"Total Amount Due $5,000.00. Charged to account 12 on file. "
     b"Percentage discount none."
 )
 
@@ -119,6 +119,55 @@ def test_audit_on_missing_document_returns_404(client):
         "/audit", json={"document_id": 9999, "audit_type": "invoice"}
     )
     assert res.status_code == 404
+
+
+def test_audit_detects_tax_in_sample_invoice(client):
+    # Regression for the live bug: sample_invoice.txt contains "Tax (8.25%) $183.98"
+    # but the audit reported "No tax found". The regex extractor must detect it.
+    client.post("/demo/seed")
+    inv = next(
+        d for d in client.get("/documents").json() if d["filename"] == "sample_invoice.txt"
+    )
+    body = client.post(
+        "/audit", json={"document_id": inv["id"], "audit_type": "invoice"}
+    ).json()
+    findings = _by_type(body["findings"])
+    tax = findings["tax"]
+    assert tax["citation"] is not None, tax
+    assert "183.98" in tax["claim"]
+    assert "8.25%" in (tax["claim"] + tax["evidence"])
+    # The real invoice also has a total, due date, terms, number, and late fee.
+    for key in ("total_amount", "due_date", "payment_terms", "invoice_number", "late_fee"):
+        assert findings[key]["citation"] is not None, findings[key]
+
+
+def test_ask_returns_direct_total_amount_answer(client):
+    # /ask must give a crisp grounded answer, not a long raw chunk.
+    client.post("/demo/seed")
+    inv = next(
+        d for d in client.get("/documents").json() if d["filename"] == "sample_invoice.txt"
+    )
+    res = client.post(
+        "/ask", json={"document_id": inv["id"], "question": "What is the total amount due?"}
+    ).json()
+    assert res["answer"] == "The total amount due is $2,413.98."
+    assert res["abstained"] is False
+    assert len(res["citations"]) >= 1  # citations unchanged
+
+
+def test_contract_audit_detects_fuzzy_clauses(client):
+    # The fuzzy (retrieval + discriminator) path still finds clause fields.
+    client.post("/demo/seed")
+    contract = next(
+        d for d in client.get("/documents").json()
+        if d["filename"] == "sample_vendor_contract.txt"
+    )
+    body = client.post(
+        "/audit", json={"document_id": contract["id"], "audit_type": "contract"}
+    ).json()
+    findings = _by_type(body["findings"])
+    for key in ("payment_terms", "termination", "liability", "governing_law"):
+        assert findings[key]["citation"] is not None, findings[key]
 
 
 def test_audit_cannot_access_another_users_document(client, second_client):

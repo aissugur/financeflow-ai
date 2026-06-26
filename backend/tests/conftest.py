@@ -14,8 +14,15 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from app import config
 from app.database import Base, get_db
 from app.main import app
+
+# Keep the suite hermetic and deterministic: the optional dense-embedding model
+# (fastembed) is a ~130 MB network download that would make CI slow and flaky, so
+# tests run on pure TF-IDF. The hybrid TF-IDF+vector fusion itself is covered
+# deterministically with mocked vectors in test_embeddings.py.
+config.EMBED_ENABLED = False
 
 
 @pytest.fixture()

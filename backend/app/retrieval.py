@@ -110,7 +110,9 @@ def hybrid_rank(
         return tfidf_scored[:top_k]
 
     # Semantic ranking over every chunk that has a stored vector (one matmul).
-    pairs = [(c, embeddings.to_vector(c.embedding)) for c in chunks]
+    # getattr keeps this robust to any chunk-like object without an embedding
+    # attribute — such a chunk simply contributes no vector and stays lexical.
+    pairs = [(c, embeddings.to_vector(getattr(c, "embedding", None))) for c in chunks]
     pairs = [(c, v) for c, v in pairs if v is not None and v.shape == qvec.shape]
     if not pairs:
         return tfidf_scored[:top_k]

@@ -1,8 +1,9 @@
-import { IconAsk, IconEval, IconLogout, IconOverview, IconSpark } from "../lib/icons";
+import { IconAsk, IconEval, IconLogout, IconOverview, IconShield, IconSpark } from "../lib/icons";
 
 const NAV = [
   { id: "overview", label: "Overview", Icon: IconOverview },
   { id: "ask", label: "Ask", Icon: IconAsk },
+  { id: "audit", label: "Audit", Icon: IconShield },
   { id: "evaluation", label: "Evaluation", Icon: IconEval },
 ];
 

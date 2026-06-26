@@ -14,6 +14,7 @@ from starlette.requests import Request
 
 from . import config
 from .answering import answer_question
+from .audit import run_audit
 from .auth import get_current_user, router as auth_router
 from .database import Base, engine, get_db
 from .evaluation import ensure_sample_documents, run_evaluation
@@ -23,6 +24,8 @@ from .models import QA, Chunk, Document, User
 from .schemas import (
     AskRequest,
     AskResponse,
+    AuditRequest,
+    AuditResponse,
     Citation,
     DemoSeedResponse,
     DocumentDeleted,
@@ -41,6 +44,7 @@ TAGS_METADATA = [
     {"name": "Health", "description": "Service status and current answer mode."},
     {"name": "Documents", "description": "Upload, list, inspect, and delete documents."},
     {"name": "Q&A", "description": "Ask grounded questions and review past answers."},
+    {"name": "Audit", "description": "Evidence-backed audit of invoices, contracts, and payment notes."},
     {"name": "Evaluation", "description": "Anti-hallucination golden-dataset evaluation."},
     {"name": "Demo", "description": "One-click seeding so the app is testable instantly."},
 ]
@@ -322,6 +326,42 @@ def history(
                 created_at=r.created_at,
             )
         )
+    return result
+
+
+# --------------------------------------------------------------------------- #
+# Audit
+# --------------------------------------------------------------------------- #
+@app.post(
+    "/audit",
+    response_model=AuditResponse,
+    tags=["Audit"],
+    summary="Audit a document for evidence-backed findings",
+    description=(
+        "Runs a finance-specific checklist over the document (invoice, contract, "
+        "payment note, or general) and returns per-field findings. Each finding is "
+        "either SUPPORTED by a citation or flagged as unsupported (missing) — the "
+        "audit reuses the same retrieval + abstention gate as /ask, so it never "
+        "invents a value."
+    ),
+)
+def audit(
+    req: AuditRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    document = _owned_document(db, user, req.document_id)  # 404 if missing / not owned
+    if document.status != "processed":
+        raise HTTPException(
+            status_code=400,
+            detail="Document was not processed successfully and cannot be audited.",
+        )
+    chunks = db.query(Chunk).filter(Chunk.document_id == document.id).all()
+    result = run_audit(req.audit_type, document.filename, chunks)
+    logger.info(
+        "Audit doc=%d type=%s risk=%s findings=%d",
+        document.id, req.audit_type, result.risk_level, len(result.findings),
+    )
     return result
 
 

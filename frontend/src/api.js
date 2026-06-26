@@ -74,6 +74,8 @@ export const api = {
   deleteDocument: (id) => request(`/documents/${id}`, { method: "DELETE" }),
   ask: (document_id, question, mode = "fast") =>
     request("/ask", { method: "POST", json: { document_id, question, mode } }),
+  audit: (document_id, audit_type = "general") =>
+    request("/audit", { method: "POST", json: { document_id, audit_type } }),
   history: (document_id) =>
     request(`/history${document_id ? `?document_id=${document_id}` : ""}`),
   evaluate: () => request("/evaluate", { method: "POST" }),

@@ -7,10 +7,12 @@ import { ErrorState } from "./components/ui/States";
 import Overview from "./components/views/Overview";
 import Ask from "./components/views/Ask";
 import Evaluation from "./components/views/Evaluation";
+import Audit from "./components/views/Audit";
 import AuthScreen from "./components/views/AuthScreen";
 
 const HEADINGS = {
   ask: { title: "Ask", sub: "Questions are answered only from retrieved evidence." },
+  audit: { title: "Audit", sub: "Evidence-backed checks with citations you can verify." },
   evaluation: { title: "Evaluation", sub: "How well the assistant stays grounded." },
 };
 
@@ -192,6 +194,7 @@ export default function App() {
           <nav className="topbar-nav">
             <button type="button" onClick={() => setView("overview")}>Overview</button>
             <button type="button" onClick={() => setView("ask")}>Ask</button>
+            <button type="button" onClick={() => setView("audit")}>Audit</button>
             <button type="button" onClick={() => setView("evaluation")}>Evaluation</button>
           </nav>
           <Button variant="primary" size="sm" loading={seeding} onClick={onTryDemo}>
@@ -233,6 +236,7 @@ export default function App() {
             onDemoConsumed={() => {}}
           />
         )}
+        {view === "audit" && <Audit documents={documents} />}
         {view === "evaluation" && <Evaluation />}
       </main>
     </div>

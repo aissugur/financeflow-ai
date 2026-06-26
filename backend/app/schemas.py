@@ -43,6 +43,40 @@ class AskResponse(BaseModel):
     metadata: dict  # question_type, evidence_status, confidence, scoring, latency, etc.
 
 
+# --------------------------------------------------------------------------- #
+# Audit (evidence-backed document audit — see app/audit.py)
+# --------------------------------------------------------------------------- #
+AuditType = Literal["invoice", "contract", "payment_note", "general"]
+Severity = Literal["low", "medium", "high"]
+
+
+class AuditRequest(BaseModel):
+    document_id: int
+    audit_type: AuditType = "general"
+
+
+class Finding(BaseModel):
+    type: str  # which check produced this (e.g. "total_amount", "due_date")
+    severity: Severity
+    claim: str  # the cited value when supported, or "No X found…" when not
+    evidence: str  # the supporting excerpt ("" when unsupported)
+    citation: Optional[Citation] = None  # present only for supported findings
+
+
+class AuditMetrics(BaseModel):
+    findings_count: int
+    supported_findings: int
+    unsupported_findings: int
+    citation_coverage: float  # supported / total, rounded to 2 (0..1)
+
+
+class AuditResponse(BaseModel):
+    summary: str
+    risk_level: Severity
+    findings: List[Finding]
+    metrics: AuditMetrics
+
+
 class QAOut(BaseModel):
     id: int
     document_id: int

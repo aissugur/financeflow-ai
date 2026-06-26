@@ -907,6 +907,64 @@ code {
 .metric-label { font-size: 12.5px; color: var(--text-dim); margin-top: 4px; }
 .metric-hint { font-size: 11.5px; color: var(--text-faint); margin-top: 7px; line-height: 1.4; }
 
+/* ===================== Audit dashboard =================================== */
+
+.audit-controls { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; }
+@media (min-width: 720px) {
+  .audit-controls { grid-template-columns: minmax(220px, 1fr) 1.5fr; }
+}
+.audit-types { display: flex; flex-wrap: wrap; gap: 8px; }
+.audit-type-btn {
+  flex: 1 1 auto; min-width: 92px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface-1);
+  color: var(--text-dim);
+  font-size: 13px; font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s var(--ease), background 0.15s var(--ease), color 0.15s var(--ease);
+}
+.audit-type-btn:hover { border-color: var(--border-strong); color: var(--text); }
+.audit-type-btn.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: rgba(37, 99, 235, 0.35);
+}
+.audit-tagline { font-size: 13px; line-height: 1.6; margin-top: 14px; max-width: 72ch; }
+.audit-summary-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-bottom: 10px;
+}
+.audit-summary { color: var(--text-dim); font-size: 14px; line-height: 1.6; margin: 0 0 18px; max-width: 80ch; }
+.audit-findings { display: grid; gap: 12px; }
+@media (min-width: 760px) { .audit-findings { grid-template-columns: 1fr 1fr; } }
+.finding {
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border-strong);
+  border-radius: var(--r-md);
+  background: var(--surface-1);
+  padding: 14px 16px;
+}
+.finding.ok { border-left-color: var(--success); }
+.finding.miss { border-left-color: var(--danger); }
+.finding-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.finding-icon {
+  display: inline-grid; place-items: center;
+  width: 22px; height: 22px; border-radius: 6px; flex: none;
+}
+.finding.ok .finding-icon { color: var(--success); background: var(--success-soft); }
+.finding.miss .finding-icon { color: var(--danger); background: var(--danger-soft); }
+.finding-type { font-weight: 700; font-size: 13.5px; flex: 1; min-width: 0; }
+.finding-claim { font-size: 14px; color: var(--text); line-height: 1.5; word-break: break-word; }
+.finding.miss .finding-claim { color: var(--text-faint); font-style: italic; }
+.finding-evidence { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
+.finding-evidence-label {
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--text-faint); margin-bottom: 4px;
+}
+.finding-excerpt { font-size: 12.5px; color: var(--text-dim); line-height: 1.55; }
+
 /* Eval table */
 .eval-table { display: flex; flex-direction: column; gap: 10px; }
 .eval-row {

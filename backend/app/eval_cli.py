@@ -1,6 +1,7 @@
 """Run the anti-hallucination evaluation from the command line.
 
-    python -m app.eval_cli
+    python -m app.eval_cli          # single run with the current config
+    python -m app.eval_cli --ab     # A/B: pure TF-IDF vs hybrid, side by side
 
 Prints a per-question report and the summary metrics, and exits non-zero if any
 unsupported answer was produced (so it can gate CI if you want).
@@ -13,6 +14,12 @@ from .logging_config import setup_logging
 
 
 def main() -> int:
+    # --ab delegates to the A/B harness (TF-IDF vs hybrid comparison).
+    if "--ab" in sys.argv[1:]:
+        from .ab_eval import main as ab_main
+
+        return ab_main()
+
     setup_logging()
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()

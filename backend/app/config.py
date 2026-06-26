@@ -63,6 +63,17 @@ RERANK_ENABLED = os.getenv("RERANK_ENABLED", "1").strip().lower() not in {"0", "
 RERANK_CANDIDATES = int(os.getenv("RERANK_CANDIDATES", "12"))  # TF-IDF pool to rerank
 RERANK_MODEL = os.getenv("RERANK_MODEL", "ms-marco-TinyBERT-L-2-v2").strip()
 
+# Optional dense (semantic) embeddings for HYBRID retrieval. We fuse the lexical
+# TF-IDF ranking with a semantic vector ranking using Reciprocal Rank Fusion (RRF)
+# so the candidate pool catches paraphrases that keyword search misses (e.g. a
+# question worded differently from the document). Lightweight CPU/ONNX via
+# fastembed — no torch. Degrades gracefully to pure TF-IDF when fastembed or the
+# model is unavailable, so the app still runs with zero ML setup. The abstention
+# DECISION still runs on the lexical TF-IDF gate, so grounding stays conservative.
+EMBED_ENABLED = os.getenv("EMBED_ENABLED", "1").strip().lower() not in {"0", "false", "no", ""}
+EMBED_MODEL = os.getenv("EMBED_MODEL", "BAAI/bge-small-en-v1.5").strip()
+HYBRID_RRF_K = int(os.getenv("HYBRID_RRF_K", "60"))  # RRF damping constant
+
 # Upload limits / validation.
 ALLOWED_EXTENSIONS = {".pdf", ".txt"}
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB

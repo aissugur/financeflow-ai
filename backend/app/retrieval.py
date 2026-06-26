@@ -10,6 +10,9 @@ import re
 from collections import Counter
 from typing import Dict, List
 
+import numpy as np
+
+from . import config, embeddings
 from .models import Chunk
 
 # Small English stopword list — enough to stop "the/of/and" dominating scores.
@@ -78,3 +81,57 @@ def rank_chunks(question: str, chunks: List[Chunk], top_k: int) -> List[ScoredCh
 
     scored.sort(key=lambda s: s.score, reverse=True)
     return scored[:top_k]
+
+
+def _rrf(rank: int, k: int) -> float:
+    """Reciprocal-rank-fusion contribution for a 0-based rank position."""
+    return 1.0 / (k + rank)
+
+
+def hybrid_rank(
+    question: str,
+    chunks: List[Chunk],
+    tfidf_scored: List[ScoredChunk],
+    top_k: int,
+) -> List[ScoredChunk]:
+    """Fuse the lexical TF-IDF ranking with a dense SEMANTIC ranking via
+    Reciprocal Rank Fusion, so the evidence pool also catches chunks that are
+    relevant in meaning but worded differently from the question (which keyword
+    TF-IDF ranks low). Each returned ScoredChunk keeps its TF-IDF score for
+    display/citation; only the ORDER is fused. Falls back to the plain TF-IDF
+    order when embeddings are disabled or unavailable.
+
+    NOTE: this only decides WHICH evidence is cited / fed to the LLM. The
+    abstention gate in answering.py still runs on the lexical TF-IDF scores, so
+    grounding stays conservative.
+    """
+    qvec = embeddings.embed_query(question)
+    if qvec is None:
+        return tfidf_scored[:top_k]
+
+    # Semantic ranking over every chunk that has a stored vector (one matmul).
+    pairs = [(c, embeddings.to_vector(c.embedding)) for c in chunks]
+    pairs = [(c, v) for c, v in pairs if v is not None and v.shape == qvec.shape]
+    if not pairs:
+        return tfidf_scored[:top_k]
+    sims = np.vstack([v for _, v in pairs]) @ qvec  # cosine (vectors are normalized)
+    sem_rank = {pairs[i][0].id: r for r, i in enumerate(np.argsort(-sims))}
+
+    tfidf_rank = {s.chunk.id: r for r, s in enumerate(tfidf_scored)}
+    # Consider the union of both candidate sets so a semantic-only hit can surface.
+    by_id: Dict[int, ScoredChunk] = {s.chunk.id: s for s in tfidf_scored}
+    for c, _ in pairs:
+        by_id.setdefault(c.id, ScoredChunk(c, 0.0))
+
+    k = config.HYBRID_RRF_K
+
+    def fused_score(cid: int) -> float:
+        s = 0.0
+        if cid in tfidf_rank:
+            s += _rrf(tfidf_rank[cid], k)
+        if cid in sem_rank:
+            s += _rrf(sem_rank[cid], k)
+        return s
+
+    fused = sorted(by_id.values(), key=lambda sc: fused_score(sc.chunk.id), reverse=True)
+    return fused[:top_k]

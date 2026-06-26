@@ -9,6 +9,7 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
+from . import embeddings
 from .chunking import chunk_pages
 from .models import Chunk, Document
 from .parsing import extract_pages
@@ -49,13 +50,18 @@ def ingest_file(
             logger.warning("Ingest produced no chunks for %s", display_name)
             return document
 
-        for page, index, text in chunk_tuples:
+        # Compute dense vectors once per document (batched). Returns None when
+        # embeddings are disabled/unavailable, in which case chunks store no
+        # vector and retrieval transparently falls back to TF-IDF only.
+        vectors = embeddings.embed_texts([text for _, _, text in chunk_tuples])
+        for i, (page, index, text) in enumerate(chunk_tuples):
             db.add(
                 Chunk(
                     document_id=document.id,
                     chunk_index=index,
                     page=page,
                     text=text,
+                    embedding=(vectors[i] if vectors else None),
                 )
             )
         document.num_chunks = len(chunk_tuples)

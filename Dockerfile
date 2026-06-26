@@ -15,9 +15,17 @@ RUN npm run build
 FROM python:3.12-slim
 WORKDIR /app
 
+# System packages: tesseract-ocr powers the optional OCR fallback for scanned /
+# image-only PDFs (parsing.py). Without it the app still runs — OCR just no-ops —
+# but installing it lets scanned uploads be read. PyMuPDF/pytesseract come via pip.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends tesseract-ocr \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY backend/requirements.txt ./requirements.txt
-# requirements.txt already pins flashrank (the reranker). Add the optional LLM
-# SDKs too so "Thinking" mode works when a key is provided.
+# requirements.txt already pins flashrank (the reranker) and fastembed (the dense
+# embeddings for hybrid retrieval). Add the optional LLM SDKs too so "Thinking"
+# mode works when a key is provided.
 RUN pip install --no-cache-dir -r requirements.txt openai anthropic
 
 COPY backend/app ./app

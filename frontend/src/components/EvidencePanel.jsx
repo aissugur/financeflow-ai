@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { IconChevron, IconQuote } from "../lib/icons";
+import { highlightMatch } from "../lib/highlight";
 import { EmptyState, LoadingState } from "./ui/States";
 
 function EvidenceItem({ citation, rank, defaultOpen }) {
@@ -30,8 +31,10 @@ function EvidenceItem({ citation, rank, defaultOpen }) {
       </button>
       {open && (
         <div className="evidence-body">
-          {citation.excerpt}
-          <span className="evidence-score">relevance {citation.score}</span>
+          {highlightMatch(citation.excerpt, citation.match_text)}
+          {citation.score != null && (
+            <span className="evidence-score">relevance {citation.score}</span>
+          )}
         </div>
       )}
     </div>

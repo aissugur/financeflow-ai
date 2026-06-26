@@ -6,6 +6,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Integer,
+    LargeBinary,
     String,
     Text,
 )
@@ -52,6 +53,9 @@ class Chunk(Base):
     chunk_index = Column(Integer, nullable=False)  # order within the document
     page = Column(Integer, nullable=True)  # 1-based page number when known
     text = Column(Text, nullable=False)
+    # Optional dense embedding (float32 bytes) for hybrid retrieval. NULL when
+    # embeddings are disabled/unavailable at ingest — retrieval then stays lexical.
+    embedding = Column(LargeBinary, nullable=True)
 
     document = relationship("Document", back_populates="chunks")
 

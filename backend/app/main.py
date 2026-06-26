@@ -257,7 +257,9 @@ def ask(
         )
 
     chunks = db.query(Chunk).filter(Chunk.document_id == document.id).all()
-    answer, abstained, mode, citations = answer_question(question, chunks, req.mode)
+    answer, abstained, mode, citations, metadata = answer_question(
+        question, chunks, req.mode
+    )
     logger.info(
         "Ask doc=%d abstained=%s citations=%d q=%r",
         document.id,
@@ -278,7 +280,13 @@ def ask(
     )
     db.commit()
 
-    return AskResponse(answer=answer, abstained=abstained, mode=mode, citations=citations)
+    return AskResponse(
+        answer=answer,
+        abstained=abstained,
+        mode=mode,
+        citations=citations,
+        metadata=metadata,
+    )
 
 
 @app.get(

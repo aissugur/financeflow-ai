@@ -12,6 +12,9 @@ class Citation(BaseModel):
     page: Optional[int] = None
     excerpt: str
     score: float
+    # The exact verbatim substring within `excerpt` that the question matched,
+    # for UI highlighting. None when no focused span could be derived.
+    match_text: Optional[str] = None
 
 
 class DocumentOut(BaseModel):
@@ -37,6 +40,7 @@ class AskResponse(BaseModel):
     abstained: bool
     mode: str  # what actually answered: "fast" or "thinking"
     citations: List[Citation]
+    metadata: dict  # question_type, evidence_status, confidence, scoring, latency, etc.
 
 
 class QAOut(BaseModel):

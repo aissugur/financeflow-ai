@@ -11,6 +11,12 @@ python-dotenv==1.0.1
 # enables the reranking stage. Small CPU model (~3 MB), no GPU needed.
 flashrank==0.2.10
 
+# Dense (semantic) embeddings for HYBRID retrieval (TF-IDF + vectors fused with
+# RRF). Lightweight CPU/ONNX (no torch). The app degrades gracefully to pure
+# TF-IDF if this is absent; installing it enables the semantic stage.
+fastembed>=0.4.0
+numpy>=1.26  # used by the hybrid fusion (also a flashrank/fastembed dependency)
+
 # Authentication: bcrypt password hashing + JWT access tokens.
 passlib[bcrypt]==1.7.4
 bcrypt==4.2.0          # pinned so passlib 1.7.4 doesn't emit a version-read warning
@@ -19,6 +25,16 @@ email-validator==2.2.0  # enables pydantic EmailStr
 # Optional "Continue with Google" — verifies the Google ID token server-side.
 google-auth==2.35.0
 requests==2.32.3
+
+# Optional OCR for scanned/image-only PDF pages (the app works WITHOUT these).
+# When a PDF page has little/no extractable text, the app *tries* to render it
+# with PyMuPDF and OCR it with pytesseract. The app degrades gracefully: if
+# these packages are absent, OCR is simply skipped (no crash, not a hard dep).
+# NOTE: pytesseract also requires the Tesseract *system* binary, installed
+# separately (e.g. `apt-get install tesseract-ocr` in the Docker image). Without
+# that binary OCR is just skipped, exactly as if the packages were missing.
+pymupdf>=1.24.0
+pytesseract>=0.3.10
 
 # Optional LLM providers (the app works WITHOUT these installed/configured).
 # Install only if you want LLM-synthesized answers:

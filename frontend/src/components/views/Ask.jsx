@@ -6,6 +6,49 @@ import Card from "../ui/Card";
 import { Select, Textarea } from "../ui/Field";
 import { EmptyState, LoadingState } from "../ui/States";
 import EvidencePanel from "../EvidencePanel";
+import EvidenceReport from "../EvidenceReport";
+
+// Map a 0..1 confidence to a tone bucket. Green when we're confident, amber in
+// the murky middle, danger when the evidence barely cleared the gate.
+function confidenceTone(c) {
+  if (typeof c !== "number") return "neutral";
+  if (c > 0.7) return "success";
+  if (c >= 0.4) return "warn";
+  return "danger";
+}
+
+// Small confidence bar + numeric % next to the answer. Reads metadata.confidence
+// (0..1) and metadata.evidence_status from the CONTRACT. Degrades to nothing
+// when metadata is absent (older responses).
+function ConfidenceMeter({ metadata, abstained }) {
+  if (!metadata || typeof metadata.confidence !== "number") return null;
+  const c = Math.max(0, Math.min(1, metadata.confidence));
+  const tone = confidenceTone(c);
+  const grounded = metadata.evidence_status === "supported" && !abstained;
+  const pct = Math.round(c * 100);
+
+  return (
+    <div className="confidence" aria-label={`Confidence ${pct} percent`}>
+      <div className="confidence-row">
+        <span className={`conf-status conf-status--${grounded ? "ok" : "weak"}`}>
+          <span className="dot" aria-hidden />
+          {grounded ? "grounded" : "not enough info"}
+        </span>
+        <span className="conf-pct">{pct}%</span>
+      </div>
+      <div
+        className="conf-track"
+        role="progressbar"
+        aria-valuenow={pct}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label="Answer confidence"
+      >
+        <span className={`conf-fill conf-fill--${tone}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
 
 const DEMO = [
   { q: "What is the total amount due?", doc: "sample_invoice.txt", hint: "Strong cited answer" },
@@ -22,6 +65,7 @@ export default function Ask({ documents, demoSignal, llmAvailable, onDemoConsume
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [mode, setMode] = useState("fast"); // "fast" (extractive) | "thinking" (LLM)
+  const [report, setReport] = useState(null); // { result, question } while printing
   const lastDemo = useRef(0);
 
   // Thinking needs a provider API key. If the backend reports none, don't let the
@@ -57,7 +101,7 @@ export default function Ask({ documents, demoSignal, llmAvailable, onDemoConsume
     setResult(null);
     try {
       const res = await api.ask(Number(id), q.trim(), mode);
-      setResult({ ...res, requestedMode: mode });
+      setResult({ ...res, requestedMode: mode, askedQuestion: q.trim() });
       await loadHistory(id);
     } catch (err) {
       setError(err.message);
@@ -202,7 +246,25 @@ export default function Ask({ documents, demoSignal, llmAvailable, onDemoConsume
                     {result.citations.length} cited
                   </Badge>
                 )}
+                <button
+                  type="button"
+                  className="report-btn"
+                  onClick={() =>
+                    setReport((prev) => ({
+                      result,
+                      question: result.askedQuestion || question,
+                      key: (prev?.key || 0) + 1,
+                    }))
+                  }
+                  title="Export a printable evidence report"
+                >
+                  ⤓ Export report
+                </button>
               </div>
+              <ConfidenceMeter
+                metadata={result.metadata}
+                abstained={result.abstained}
+              />
               <p className={`answer-body ${result.abstained ? "dim" : ""}`}>
                 {result.answer}
               </p>
@@ -238,6 +300,15 @@ export default function Ask({ documents, demoSignal, llmAvailable, onDemoConsume
       </div>
 
       <EvidencePanel citations={result?.citations} loading={loading} />
+
+      {report && (
+        <EvidenceReport
+          key={report.key}
+          result={report.result}
+          question={report.question}
+          onClose={() => setReport(null)}
+        />
+      )}
     </div>
   );
 }

@@ -86,7 +86,9 @@ def run_evaluation(db: Session) -> EvalResponse:
             continue
 
         chunks = db.query(Chunk).filter(Chunk.document_id == doc.id).all()
-        answer, abstained, _mode, citations = answer_question(item["question"], chunks)
+        answer, abstained, _mode, citations, _metadata = answer_question(
+            item["question"], chunks
+        )
         has_citation = len(citations) > 0
         expectation = item["expectation"]
         expected_evidence = item.get("expected_evidence")

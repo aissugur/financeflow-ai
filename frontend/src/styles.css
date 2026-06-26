@@ -735,6 +735,156 @@ code {
 }
 .evidence-score { display: inline-block; margin-top: 8px; font-size: 11px; color: var(--text-faint); }
 
+/* Matched-span highlight inside an evidence excerpt (Citation.match_text) */
+.evidence-mark {
+  background: var(--accent-soft);
+  color: var(--text);
+  padding: 0 2px;
+  border-radius: 4px;
+  box-shadow: inset 0 -1px 0 rgba(37, 99, 235, 0.35);
+}
+
+/* ===================== Confidence indicator (Ask answer) ================= */
+
+.confidence { margin: -2px 0 14px; max-width: 72ch; }
+.confidence-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.conf-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.conf-status .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.conf-status--ok { color: var(--success); }
+.conf-status--weak { color: var(--warn); }
+.conf-pct { font-size: 12px; font-weight: 700; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.conf-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.conf-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.5s var(--ease);
+}
+.conf-fill--success { background: var(--success); }
+.conf-fill--warn { background: var(--warn); }
+.conf-fill--danger { background: var(--danger); }
+.conf-fill--neutral { background: var(--text-faint); }
+
+/* Export-report button (sits in the answer head) */
+.report-btn {
+  margin-left: auto;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid rgba(37, 99, 235, 0.25);
+  border-radius: 999px;
+  padding: 3px 11px;
+  cursor: pointer;
+  transition: background 0.18s var(--ease), border-color 0.18s var(--ease);
+}
+.report-btn:hover { background: rgba(37, 99, 235, 0.16); border-color: rgba(37, 99, 235, 0.4); }
+.report-btn:active { transform: translateY(1px); }
+
+/* ===================== Evidence report (printable) ====================== */
+/* Off-screen on screen; a print stylesheet reveals just this for window.print() */
+.evidence-report {
+  position: absolute;
+  left: -10000px;
+  top: 0;
+  width: 760px;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.report-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-bottom: 14px;
+  margin-bottom: 18px;
+  border-bottom: 2px solid var(--text);
+}
+.report-brand { font-size: 16px; font-weight: 800; color: var(--text); letter-spacing: -0.01em; }
+.report-date { font-size: 12px; color: var(--text-faint); margin-top: 3px; }
+.report-status {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+.report-status.ok { color: var(--success); background: var(--success-soft); border-color: rgba(15, 128, 80, 0.3); }
+.report-status.weak { color: var(--warn); background: var(--warn-soft); border-color: rgba(151, 95, 0, 0.3); }
+.report-block { margin-bottom: 20px; }
+.report-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+  font-weight: 700;
+  margin-bottom: 7px;
+}
+.report-question { font-size: 16px; font-weight: 600; color: var(--text); line-height: 1.5; }
+.report-answer-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.report-conf { text-align: right; line-height: 1.1; }
+.report-conf-num { font-size: 22px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+.report-conf-lbl { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-faint); }
+.report-answer { font-size: 15px; line-height: 1.65; color: var(--text); margin-top: 4px; }
+.report-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.report-evidence { border: 1px solid var(--border); border-radius: var(--r-md); padding: 12px 14px; margin-bottom: 10px; }
+.report-evidence-head { display: flex; align-items: center; gap: 9px; margin-bottom: 7px; flex-wrap: wrap; }
+.report-rank {
+  width: 20px; height: 20px; flex: none;
+  border-radius: 6px;
+  display: grid; place-items: center;
+  font-size: 11px; font-weight: 700;
+  background: var(--accent-soft); color: var(--accent);
+  border: 1px solid rgba(37, 99, 235, 0.25);
+}
+.report-doc { font-size: 13px; font-weight: 700; color: var(--text); }
+.report-meta { font-size: 11px; color: var(--text-faint); }
+.report-excerpt { font-size: 12.5px; line-height: 1.6; color: var(--text-dim); }
+.report-noevidence { font-size: 13px; color: var(--text-dim); }
+.report-footer { margin-top: 22px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-faint); }
+
+/* When printing the report: hide the app, reveal only the report on the page */
+@media print {
+  .printing-report body * { visibility: hidden; }
+  .printing-report .evidence-report,
+  .printing-report .evidence-report * { visibility: visible; }
+  .printing-report .evidence-report {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  .printing-report .evidence-mark { box-shadow: none; }
+}
+
 /* ===================== Metrics (evaluation) ============================== */
 
 .metric-grid {
